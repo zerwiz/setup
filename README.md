@@ -35,7 +35,6 @@ setup/
 ├── setup.sh            # Workshop Setup
 └── ai-dev-suite/
     ├── README.md
-    ├── PLANNING.md
     └── install.sh      # AI Dev Suite script
 ```
 
