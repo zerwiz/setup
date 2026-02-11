@@ -12,7 +12,15 @@ Installs Node.js and Git for workshops.
 curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/setup.sh | bash
 ```
 
-### AI Dev Suite
+### AI Dev Suite TUI
+
+Interactive menu to select and install AI tools. Installs Elixir if needed. Mac/Linux.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/run-tui.sh | bash
+```
+
+### AI Dev Suite (display / one-liner install)
 
 Displays or installs AI dev tools (Zed, LM Studio, Ollama, Pinokio, ClawCode).
 
