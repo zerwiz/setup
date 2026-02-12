@@ -16,5 +16,6 @@ Format: list entries under a date/version heading; use present tense (“Add …
 - AI Dev Suite: structure-agnostic RAG discovery – env AI_DEV_SUITE_RAG_SCRIPT or walk-up from cwd; no hardcoded folder layout; doc STORAGE.md and FUNCTIONS.md.
 - Add .cursor/rules/ai-dev-suite-paths.mdc – rule for structure-agnostic path discovery in AI Dev Suite.
 - README: Add alpha/collaboration call-out above About me.
+- README About: Add Workflowspace, AffiliateFlow, NorthStarOS to Areas table.
 - Update README About section with expanded bio: Zerwiz identity, education, AI Dev Suite, WhyNot Productions, UpsideDown Production, principles, network, contact.
 - Add CHANGELOG. zerwiz/setup is the main repo for tools; develop here.

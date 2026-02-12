@@ -14,6 +14,9 @@ I'm **Zerwiz** — Lars-Josef Lindbom. Developer. AI educator. Producer.
 | **AI Dev Suite** | Local-first tools: chat, memory, and RAG research. Runs on your machine. One curl install. Works offline with Ollama. |
 | **WhyNot Productions** | Creative base for projects and strategy. Roots in extreme sports, music, and festivals. Underground culture. Strategy and production. |
 | **UpsideDown Production** | Collaborative AI tool. Engine for festivals. Creative partnerships. Cross-border movement. Creating new formats. |
+| **Workflowspace** | Workflow and productivity tools. Streamlined processes. |
+| **AffiliateFlow** | Affiliate and revenue flow. Partnership and growth tools. |
+| **NorthStarOS** | Operating system for purposeful work. Direction and focus. |
 
 **Principles:** Movement over ego. Collaboration over competition. Action over perfection.
 
