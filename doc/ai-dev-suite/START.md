@@ -90,28 +90,123 @@ If you have zerwiz/setup cloned:
 | `./start-ai-dev-suite-tui.sh` | TUI (terminal menu) |
 | `./start-ai-dev-suite-acp.sh` | ACP adapter (stdio, for Zed/OpenCode) |
 
-**On startup**, all scripts run `ensure-rag-deps.sh` to install RAG/web research deps (duckduckgo-search, trafilatura, etc.) for Internet mode in Chat.
+**On startup**, all scripts: start Ollama if not running, run `ensure-rag-deps.sh` for RAG/web research deps (duckduckgo-search, trafilatura, etc.) for Internet mode in Chat.
+
+If `./script.sh` says "Permission denied", run `bash ./script.sh` or `chmod +x *.sh` first.
 
 ```bash
-cd ~/CodeP/WhyNotProductions\ Homepage/tools
+cd ~/CodeP/setup
 ./start-ai-dev-suite-web.sh       # browser UI
 ./start-ai-dev-suite-electron.sh  # desktop app (npm install first in electron_app)
 ```
 
 ---
 
-## Manual (two terminals)
+## Manual (two terminals) – when start script fails
 
-**Terminal 1 – API**
+If `./start-ai-dev-suite-electron.sh` gives "Cannot reach API" or "(no response)", run the API first in its own terminal (so you see logs), then the app:
+
+**Terminal 1 – API (keep this running)**
 ```bash
-cd ~/CodeP/setup/ai-dev-suite/elixir_tui
-mix run -e "AiDevSuiteTui.API.start()"
+cd ~/CodeP/setup
+./start-ai-dev-suite-api.sh
 ```
+Wait for "Zerwiz AI Dev Suite API running at http://localhost:41434".
 
-**Terminal 2 – React**
+**Terminal 2 – Electron (do not use the full start script; it would restart the API)**
 ```bash
 cd ~/CodeP/setup/ai-dev-suite/electron_app
-npm run dev:vite
+AI_DEV_SUITE_API_STARTED=1 npm run dev
 ```
 
-Open http://localhost:5174. API: http://localhost:41434.
+Or for browser only:
+```bash
+cd ~/CodeP/setup
+./start-ai-dev-suite-web.sh
+```
+(Web script starts its own API; use this if you skipped Terminal 1.)
+
+---
+
+## Troubleshooting: "(no response)" in Chat
+
+If Chat shows "(no response)" when you send a message, check these in order:
+
+### 1. Try KB: default
+
+Large knowledge bases can cause empty replies. Click **KBs** and switch to **default**. If chat works with default KB, your custom KB may be too large or have problematic content.
+
+### 2. Run the API in a visible terminal
+
+API and Ollama errors appear in the terminal. Run the Electron app from a terminal, or start the API separately.
+
+**No Ollama terminal opens?** The script only opens one when it starts Ollama. If Ollama is already running, use `OLLAMA_TERMINAL=1 ./start-ai-dev-suite-electron.sh` or see [OLLAMA_TERMINAL.md](./OLLAMA_TERMINAL.md).
+
+**Debug observer:** `DEBUG=1 ./start-ai-dev-suite-electron.sh` opens a second terminal (logs, health checks, test chat) and starts the **A2A debug agent** (Google Agent2Agent protocol) at http://localhost:41435 so other agents can query it. Or run manually: `./debugger/observer.sh`, `./debugger/start-a2a.sh`. See [A2A_DEBUG.md](./A2A_DEBUG.md).
+
+```bash
+./start-ai-dev-suite-api.sh
+```
+
+Or: `./start-ai-dev-suite-electron.sh` – API logs go to that same terminal.
+
+### 3. Ollama running?
+
+Click **Refresh** in Chat. If "Ollama not running": Start Ollama button or `ollama serve` in a terminal.
+
+### 4. First model load
+
+The first time you use a model (e.g. llama3.1), Ollama loads it into memory. Can take 1–2 minutes. Wait and try again.
+
+### 5. Ports in use
+
+- **41434** (API) – Another API/Electron instance may be running. Stop it, then restart.
+- **5174** (Vite) – Stale dev server. Start scripts free it automatically; or `kill $(lsof -t -i:5174)`.
+
+### 6. API reachable?
+
+```bash
+curl -s http://localhost:41434/api/ollama/models
+```
+
+If this fails: API not running or wrong port. Start the API first.
+
+### 7. Ollama responding?
+
+```bash
+curl -s http://localhost:11434/api/tags
+```
+
+If this fails: Ollama not running. Start with `ollama serve`.
+
+### 8. Model exists?
+
+```bash
+ollama list
+```
+
+If your model is missing: pull it (`ollama pull llama3.1` or use ↓ Download in Chat).
+
+### 9. Direct Ollama chat works?
+
+```bash
+ollama run llama3.1:latest "hello"
+```
+
+If this hangs or errors: fix Ollama (e.g. GPU drivers, disk space) before using Chat.
+
+### 10. Knowledge base / system prompt
+
+Very large or malformed docs in the KB can cause slow or empty responses. Try KB: **default** (minimal drive) to rule it out.
+
+### 11. Firewall / VPN
+
+Localhost (127.0.0.1) is usually allowed. If you use a VPN or strict firewall, ensure it doesn’t block local connections.
+
+### 12. Elixir / Mix
+
+If the API won’t start: `cd ai-dev-suite/elixir_tui && mix deps.get && mix compile`. Check for compile errors.
+
+### 13. Timeout
+
+First model load can exceed 30s. Chat allows up to ~5 min. If you see a timeout error, the model may be too large for your hardware.

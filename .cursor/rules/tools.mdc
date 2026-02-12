@@ -19,10 +19,9 @@ This repo (zerwiz/setup) is never pushed to Netlify. Tools are delivered via cur
 
 ## Extra programs (AI Dev Suite, Workshop Setup)
 
-- **Location:** This repo (zerwiz/setup) at root: ai-dev-suite/, rag/, setup.sh, run-tui.sh, start-*.sh. `for-zerwiz-setup/` is a subset synced to homepage.
+- **Location:** This repo (zerwiz/setup) at root: ai-dev-suite/, rag/, setup.sh, run-tui.sh, start-*.sh.
 - **Deployed from:** zerwiz/setup. Push directly here.
 - **Curl commands** must point to zerwiz/setup only.
-- **Sync to homepage:** Run `./scripts/sync-to-homepage.sh` to copy for-zerwiz-setup/ to WhyNotProductionsHomepage. Keep for-zerwiz-setup/ in sync with root scripts.
 
 ## AI Dev Suite – system portability
 
@@ -36,5 +35,4 @@ The install must work on any user machine:
 
 1. Create `<name>/` with `install.sh` and README (at repo root)
 2. Add doc in `doc/<name>/`
-3. Add to `for-zerwiz-setup/` if it should be synced to homepage; run `./scripts/sync-to-homepage.sh`
-4. Add terminal block on homepage if curl-able (in WhyNotProductionsHomepage)
+3. Add terminal block or link if curl-able

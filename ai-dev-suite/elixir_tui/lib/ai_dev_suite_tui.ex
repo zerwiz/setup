@@ -55,10 +55,32 @@ defmodule AiDevSuiteTui do
 
   def start_ollama do
     if System.find_executable("ollama") do
-      System.cmd("sh", ["-c", "nohup ollama serve >> /tmp/ollama.log 2>&1 &"])
-      {:ok, :started}
+      # Capture PID so we can stop it on Quit
+      {output, _} = System.cmd("sh", ["-c", "ollama serve >> /tmp/ollama.log 2>&1 & echo $!"], stderr_to_stdout: true)
+      pid_str = output |> String.trim() |> String.split("\n") |> List.last() || ""
+      case Integer.parse(pid_str) do
+        {pid, _} when pid > 0 ->
+          :persistent_term.put(:ai_dev_suite_ollama_pid, pid)
+          {:ok, :started}
+        _ ->
+          {:ok, :started}
+      end
     else
       {:error, :not_found}
+    end
+  end
+
+  def stop_ollama do
+    pid = :persistent_term.get(:ai_dev_suite_ollama_pid, nil)
+    :persistent_term.erase(:ai_dev_suite_ollama_pid)
+    case pid do
+      nil ->
+        {:ok, :not_started_by_app}
+      pid when is_integer(pid) ->
+        if System.find_executable("kill") do
+          System.cmd("kill", [to_string(pid)], stderr_to_stdout: true)
+        end
+        {:ok, :stopped}
     end
   end
 
@@ -72,6 +94,30 @@ defmodule AiDevSuiteTui do
   end
 
   def pull_ollama_model(_), do: {:error, :invalid}
+
+  @doc """
+  Preload a model into Ollama's memory. Call when user selects a model so it's ready for first chat.
+  """
+  def load_ollama_model(model) when is_binary(model) and model != "" do
+    start_ollama()
+    wait_for_ollama_server(5)
+    body = Jason.encode!(%{"model" => model, "prompt" => "", "stream" => false})
+    tmp = Path.join(System.tmp_dir!(), "ollama_load_#{:erlang.unique_integer([:positive])}.json")
+    File.write!(tmp, body)
+    try do
+      {_output, code} = System.cmd("curl", [
+        "-s", "--max-time", "120", "--connect-timeout", "5",
+        "-X", "POST", "#{@ollama_url}/api/generate",
+        "-H", "Content-Type: application/json", "-d", "@#{tmp}"
+      ])
+      if code == 0, do: {:ok, :loaded}, else: {:error, code}
+    rescue
+      e -> {:error, Exception.message(e)}
+    after
+      File.rm(tmp)
+    end
+  end
+  def load_ollama_model(_), do: {:error, :invalid}
 
   def list_ollama_models do
     if System.find_executable("ollama") do
@@ -1288,6 +1334,9 @@ defmodule AiDevSuiteTui do
           line = String.trim(line)
           if line != "" do
             case Jason.decode(line) do
+              {:ok, %{"message" => %{"thinking" => thinking}}} when is_binary(thinking) and thinking != "" ->
+                callback.(:thinking, thinking)
+              {:ok, %{"message" => %{"thinking" => thinking}}} when is_binary(thinking) -> :ok
               {:ok, %{"message" => %{"content" => content}}} when is_binary(content) and content != "" ->
                 callback.(:delta, content)
               {:ok, %{"message" => %{"content" => content}}} when is_binary(content) -> :ok
@@ -1301,6 +1350,8 @@ defmodule AiDevSuiteTui do
       {^port, {:exit_status, 0}} ->
         if buffer != "" do
           case Jason.decode(String.trim(buffer)) do
+            {:ok, %{"message" => %{"thinking" => thinking}}} when is_binary(thinking) and thinking != "" ->
+              callback.(:thinking, thinking)
             {:ok, %{"message" => %{"content" => content}}} when is_binary(content) and content != "" ->
               callback.(:delta, content)
             _ -> :ok
@@ -1405,6 +1456,8 @@ defmodule AiDevSuiteTui do
 
   defp build_ollama_body(model, messages, stream, options) do
     base = %{"model" => model, "messages" => Enum.map(messages, &stringify_msg/1), "stream" => stream}
+    # Think disabled – was causing (no response) with qwen2.5-coder and others.
+    # To re-enable for qwen3/deepseek-r1: add Map.put(base, "think", true) when model_supports_thinking?(model)
     opts = opts_map_from_list(options)
     if opts == %{}, do: base, else: Map.put(base, "options", opts)
   end

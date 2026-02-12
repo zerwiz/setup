@@ -123,12 +123,11 @@ curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/setup.sh | bash
 
 ```
 setup/                   # zerwiz/setup – tools repo (this repo)
-├── ai-dev-suite/       # Install, TUI, Electron app, ACP adapter
+├── ai-dev-suite/       # Install, TUI, Electron app, ACP adapter (canonical source)
 ├── rag/                # RAG script and deps
 ├── doc/                # All tool documentation
 ├── rules/              # Deployment, GitHub, conventions
-├── for-zerwiz-setup/   # Subset synced to homepage
-├── scripts/            # sync-to-homepage.sh
+├── scripts/            # Automation scripts
 └── start-*.sh          # Launch scripts
 ```
 
@@ -151,4 +150,4 @@ Contributions are welcome. Check [rules/](./rules/) for conventions and [rules/s
 
 ---
 
-*Rules and conventions: [rules/](./rules/). Develop in zerwiz/setup; do not push tools to WhyNotProductionsHomepage.*
+*Rules and conventions: [rules/](./rules/).*

@@ -12,10 +12,15 @@ defmodule AiDevSuiteTui.API do
       _ -> :ok
     end
     port = Application.get_env(:ai_dev_suite_tui, :api_port, 41_434)
-    {:ok, _} = Plug.Cowboy.http(AiDevSuiteTui.ApiRouter, [], port: port)
-    IO.puts("Zerwiz AI Dev Suite API running at http://localhost:#{port}")
-    IO.puts("Press Ctrl+C to stop")
-    Process.sleep(:infinity)
+    case Plug.Cowboy.http(AiDevSuiteTui.ApiRouter, [], port: port) do
+      {:ok, _} ->
+        IO.puts("Zerwiz AI Dev Suite API running at http://localhost:#{port}")
+        IO.puts("Press Ctrl+C to stop")
+        Process.sleep(:infinity)
+      {:error, :eaddrinuse} ->
+        IO.puts(:stderr, "Port #{port} is already in use. Stop the other API process (e.g. another Electron or api instance).")
+        System.halt(1)
+    end
   end
 
   defp ensure_rag_deps do
@@ -24,7 +29,9 @@ defmodule AiDevSuiteTui.API do
       req ->
         python = System.find_executable("python3") || System.find_executable("python")
         if python do
-          System.cmd(python, ["-m", "pip", "install", "-q", "-r", req], stderr_to_stdout: false)
+          # Run via sh to suppress "No module named pip" etc.; non-fatal
+          # $0,$1 = python path, req path (safe for spaces)
+          System.cmd("sh", ["-c", "p=\"$0\"; r=\"$1\"; \"$p\" -m pip install -q -r \"$r\" 2>/dev/null || true", python, req])
         end
         :ok
     end

@@ -106,7 +106,7 @@ The API already provides what the adapter needs:
 | Endpoint | Purpose for ACP |
 |----------|------------------|
 | `POST /api/chat` | Non-streaming chat. Send `{ model, messages, knowledge_bases }`, get `{ reply }`. |
-| `POST /api/chat/stream` | Streaming chat. Returns NDJSON: `{ delta }`, `{ done }`, `{ error }`. |
+| `POST /api/chat/stream` | Streaming chat. Returns NDJSON: `{ delta }`, `{ thinking }`, `{ done }`, `{ error }`. |
 | `GET /api/ollama/models` | List models for model selection. |
 | `POST /api/ollama/start` | Ensure Ollama is running. |
 | `GET /api/knowledge-bases` | List KBs for context selection. |

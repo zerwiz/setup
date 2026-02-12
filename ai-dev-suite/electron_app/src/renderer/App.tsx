@@ -25,8 +25,8 @@ export default function App() {
               <OllamaStatus />
               <nav className="flex gap-1">
               {[
-                { to: '/', label: 'Home' },
-                { to: '/chat', label: 'Chat' },
+                { to: '/', label: 'Chat' },
+                { to: '/home', label: 'Home' },
                 { to: '/drive', label: 'Drive' },
                 { to: '/memory', label: 'Memory' },
                 { to: '/tools', label: 'Tools' },
@@ -52,9 +52,10 @@ export default function App() {
 
         <main className="flex-1 p-6 overflow-auto">
           <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/tools" element={<Tools />} />
+            <Route path="/" element={<Chat />} />
             <Route path="/chat" element={<Chat />} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/tools" element={<Tools />} />
             <Route path="/drive" element={<Drive />} />
             <Route path="/memory" element={<Memory />} />
             <Route path="/settings" element={<Settings />} />

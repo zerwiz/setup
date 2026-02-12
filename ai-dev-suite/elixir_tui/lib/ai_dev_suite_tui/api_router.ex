@@ -132,10 +132,48 @@ defmodule AiDevSuiteTui.ApiRouter do
     end
   end
 
+  post "/api/ollama/load" do
+    model = conn.body_params["model"] || conn.body_params["name"]
+    case AiDevSuiteTui.load_ollama_model(model || "") do
+      {:ok, _} -> send_json(conn, 200, %{ok: true})
+      {:error, _} -> send_json(conn, 200, %{ok: false})
+    end
+  end
+
   post "/api/ollama/start" do
     case AiDevSuiteTui.start_ollama() do
       {:ok, _} -> send_json(conn, 200, %{ok: true})
       {:error, _} -> send_json(conn, 503, %{error: "Ollama not found"})
+    end
+  end
+
+  post "/api/ollama/stop" do
+    case AiDevSuiteTui.stop_ollama() do
+      {:ok, _} -> send_json(conn, 200, %{ok: true})
+    end
+  end
+
+  # Proxy to debugger so Suite can ask for debug help (avoids CORS)
+  post "/api/debugger/ask" do
+    port = System.get_env("DEBUG_A2A_PORT", "41435")
+    url = "http://localhost:#{port}/api/analyze"
+    body = conn.body_params || %{}
+    payload = Jason.encode!(%{message: body["message"] || "", context: body["context"] || ""})
+    tmp = System.tmp_dir!() |> Path.join("ai-dev-suite-debugger-ask-#{System.unique_integer([:positive])}.json")
+    File.write!(tmp, payload)
+    try do
+      case System.cmd("curl", ["-s", "-X", "POST", "-H", "Content-Type: application/json", "--data-binary", "@" <> tmp, "--max-time", "65", url], stderr_to_stdout: true) do
+        {out, 0} ->
+          case Jason.decode(out) do
+            {:ok, %{"ok" => true, "analysis" => analysis}} -> send_json(conn, 200, %{ok: true, analysis: analysis})
+            {:ok, %{"ok" => false, "error" => err}} -> send_json(conn, 502, %{ok: false, error: err})
+            _ -> send_json(conn, 502, %{ok: false, error: "Debugger not running. Run ./debugger/start-a2a.sh or DEBUG=1 ./start-ai-dev-suite-electron.sh"})
+          end
+        {_, _} ->
+          send_json(conn, 502, %{ok: false, error: "Debugger unreachable at localhost:#{port}. Run ./debugger/start-a2a.sh or DEBUG=1 ./start-ai-dev-suite-electron.sh"})
+      end
+    after
+      _ = File.rm(tmp)
     end
   end
 
@@ -181,6 +219,8 @@ defmodule AiDevSuiteTui.ApiRouter do
       |> send_chunked(200)
     parent = self()
     callback = fn
+      :thinking, content ->
+        send(parent, {:stream_chunk, Jason.encode!(%{thinking: content}) <> "\n"})
       :delta, content ->
         send(parent, {:stream_chunk, Jason.encode!(%{delta: content}) <> "\n"})
       :done, _ ->

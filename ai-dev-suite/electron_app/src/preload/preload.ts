@@ -38,9 +38,39 @@ const apiFetch = async (path: string, options?: RequestInit & { timeout?: number
   }
 };
 
+type ChatStreamCallbacks = {
+  onChunk: (data: { delta?: string; thinking?: string; done?: boolean }) => void;
+  onDone: () => void;
+  onError: (err: string) => void;
+};
+
+const chatStream = (body: Record<string, unknown>, callbacks: ChatStreamCallbacks) => {
+  const chunkHandler = (_ev: unknown, data: { delta?: string; thinking?: string; done?: boolean }) => callbacks.onChunk(data);
+  const doneHandler = () => {
+    ipcRenderer.removeListener('chat:stream:chunk', chunkHandler);
+    ipcRenderer.removeAllListeners('chat:stream:done');
+    ipcRenderer.removeAllListeners('chat:stream:error');
+    callbacks.onDone();
+  };
+  const errorHandler = (_ev: unknown, err: string) => {
+    ipcRenderer.removeListener('chat:stream:chunk', chunkHandler);
+    ipcRenderer.removeAllListeners('chat:stream:done');
+    ipcRenderer.removeAllListeners('chat:stream:error');
+    callbacks.onError(err);
+  };
+  ipcRenderer.on('chat:stream:chunk', chunkHandler);
+  ipcRenderer.once('chat:stream:done', doneHandler);
+  ipcRenderer.once('chat:stream:error', errorHandler);
+  ipcRenderer.invoke('chat:stream', body).finally(() => {
+    ipcRenderer.removeListener('chat:stream:chunk', chunkHandler);
+  });
+};
+
 contextBridge.exposeInMainWorld('api', {
   base: API_BASE,
   fetch: apiFetch,
+  chatStream,
+  chatStreamAbort: () => ipcRenderer.send('chat:stream:abort'),
   quitApp: () => ipcRenderer.invoke('app:quit'),
   selectFilesAndFolders: () => ipcRenderer.invoke('dialog:selectFilesAndFolders'),
   selectDirectory: () => ipcRenderer.invoke('dialog:selectDirectory'),

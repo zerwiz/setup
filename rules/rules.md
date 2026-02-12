@@ -1,6 +1,6 @@
 # Tools Rules – WhyNot Productions
 
-**zerwiz/setup is the main repo for tools.** Develop there. Commit there. Push there. Do not push tools to WhyNotProductionsHomepage.
+**zerwiz/setup is the main repo for tools.** Develop there. Commit there. Push there.
 
 ---
 
@@ -8,11 +8,10 @@
 
 | Destination | Contents |
 |-------------|----------|
-| **Netlify** | Only `systems/frontend/` in WhyNotProductionsHomepage → `dist/` |
 | **zerwiz/setup** | All tools content: ai-dev-suite/, rag/, doc/, start scripts, install scripts – **develop here** |
 
 - Tools are delivered via `curl | bash` from raw.githubusercontent.com/zerwiz/setup.
-- Push directly to zerwiz/setup. No sync from WhyNotProductionsHomepage.
+- Push directly to zerwiz/setup.
 
 ---
 
@@ -41,7 +40,6 @@
 ## 3. Work in zerwiz/setup
 
 - **Main repo:** https://github.com/zerwiz/setup — clone, develop, commit, push here.
-- **Do not** push tools to WhyNotProductionsHomepage.
 
 ---
 
@@ -84,7 +82,7 @@ The install must work on **any user machine** (macOS, Linux, Windows with Git Ba
 1. In zerwiz/setup, create `<name>/` with `install.sh` (if applicable) and a README.
 2. Add docs in `doc/<name>/`.
 3. Update CHANGELOG and README. Push to zerwiz/setup.
-4. Add terminal block on homepage (WhyNotProductionsHomepage) if the tool should be curl-able from the site.
+4. Update README and doc index if the tool is curl-able.
 
 ---
 

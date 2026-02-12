@@ -1,6 +1,6 @@
 # Tools Documentation
 
-Hello! This is your guide to the terminal tools and utilities from [WhyNot Productions](https://whynotproductions.netlify.app)—lightweight scripts you can run with `curl | bash` right from the homepage. Below you’ll find what’s available and how to get started.
+Documentation for the AI Dev Suite tools: Elixir TUI, Electron app, RAG, install scripts. Curl-installable via zerwiz/setup.
 
 ---
 
@@ -46,6 +46,7 @@ curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/setup.sh | bash
 | Doc | Description |
 |-----|-------------|
 | [Structure](./STRUCTURE.md) | Tools folder structure – ai-dev-suite, rag, doc, deployment |
+| [CURL_INSTALLS](./CURL_INSTALLS.md) | All curl commands for homepage – AI Dev Suite, tools, copy-paste ready |
 | [INSTALL_COMMANDS](./INSTALL_COMMANDS.md) | Terminal install commands; shareable: whynotproductions.netlify.app/install |
 | [TODO](./TODO.md) | Action items from FUNCTIONS and RAG Best Practices |
 | [RAG](./rag/README.md) | Setup, usage, options |
@@ -66,16 +67,16 @@ curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/setup.sh | bash
 | [Planning](./ai-dev-suite/PLANNING.md) | Roadmap and implementation status |
 | [UI Planning](./ai-dev-suite/UI_PLANNING.md) | Desktop app architecture (Electron + React + Elixir) |
 | [TUI quick start](./ai-dev-suite/elixir-tui.md) | Interactive menu quick start |
+| [Debugger](./ai-dev-suite/DEBUGGER.md) | Quick start: observer, A2A, Electron UI, edit files |
+| [Debugger Capabilities](./ai-dev-suite/DEBUGGER_CAPABILITIES.md) | Full reference: health, logs, chat, run fixes, edit files, Suite ↔ Debugger |
 
 ---
 
 ## Adding a new tool
 
 1. Create `<name>/` with `install.sh` and `README.md` (at repo root)
-2. Add to `for-zerwiz-setup/` if it should be synced to the homepage
-3. Add terminal block on the homepage front page (in WhyNotProductionsHomepage)
-4. Add doc to `doc/<name>/`
-5. Push to zerwiz/setup; run `./scripts/sync-to-homepage.sh` if you updated `for-zerwiz-setup/`
+2. Add doc to `doc/<name>/`
+3. Push to zerwiz/setup
 
 ---
 

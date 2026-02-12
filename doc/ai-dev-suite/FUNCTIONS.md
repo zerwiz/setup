@@ -48,6 +48,8 @@ The AI Dev Suite has three main parts:
 | **Pull model** | Runs `ollama pull <model>` to download |
 | **Chat** | Uses Ollama HTTP API (`POST /api/chat`) for chat |
 | **Chat stream** | Uses Ollama streaming API for token-by-token output (Electron app) |
+| **Thinking** | For thinking-capable models (qwen3, deepseek-r1, etc.), shows reasoning trace above the answer in the chat UI. See [THINKING.md](./THINKING.md) for supported models and usage. |
+| **Quit** | Stops Ollama if the app started it; stops API; exits (Electron/TUI) |
 
 ### Model options (API)
 
@@ -180,6 +182,8 @@ Base URL: `http://localhost:41434`. CORS enabled. All JSON.
 | GET | `/api/ollama/models` | List installed models |
 | POST | `/api/ollama/pull` | Pull model (body: `model` or `name`) |
 | POST | `/api/ollama/start` | Start Ollama server |
+| POST | `/api/ollama/load` | Preload model into memory (body: `model`) |
+| POST | `/api/ollama/stop` | Stop Ollama (if app started it) |
 | GET | `/api/downloadable_models` | List models for download picker |
 
 ### Chat
@@ -187,7 +191,7 @@ Base URL: `http://localhost:41434`. CORS enabled. All JSON.
 | Method | Path | Purpose |
 |--------|------|---------|
 | POST | `/api/chat` | Non-streaming chat. Body: `model`, `messages`, `knowledge_base` or `knowledge_bases`, `options` |
-| POST | `/api/chat/stream` | Streaming chat (NDJSON). Body: `model`, `messages`, `knowledge_base`/`knowledge_bases`, `options`, `internet_enabled` |
+| POST | `/api/chat/stream` | Streaming chat (NDJSON: `{ delta }`, `{ thinking }`, `{ done }`, `{ error }`). Body: `model`, `messages`, `knowledge_base`/`knowledge_bases`, `options`, `internet_enabled` |
 
 ### Memory & Behavior
 
@@ -276,6 +280,7 @@ Base URL: `http://localhost:41434`. CORS enabled. All JSON.
 | `downloadable_models/0` | Returns model names for download picker |
 | `run_install/1` | Runs shell command, streams output |
 | `start_ollama/0` | Starts Ollama in background |
+| `stop_ollama/0` | Stops Ollama if the app started it |
 | `pull_ollama_model/1` | Pulls model via `ollama pull` |
 | `list_ollama_models/0` | Lists installed models |
 | `chat_with_ollama/1` | Enters chat loop with model |

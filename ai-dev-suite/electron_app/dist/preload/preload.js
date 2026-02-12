@@ -40,12 +40,36 @@ const apiFetch = async (path, options) => {
         return { error: msg };
     }
 };
+const chatStream = (body, callbacks) => {
+    const chunkHandler = (_ev, data) => callbacks.onChunk(data);
+    const doneHandler = () => {
+        electron_1.ipcRenderer.removeListener('chat:stream:chunk', chunkHandler);
+        electron_1.ipcRenderer.removeAllListeners('chat:stream:done');
+        electron_1.ipcRenderer.removeAllListeners('chat:stream:error');
+        callbacks.onDone();
+    };
+    const errorHandler = (_ev, err) => {
+        electron_1.ipcRenderer.removeListener('chat:stream:chunk', chunkHandler);
+        electron_1.ipcRenderer.removeAllListeners('chat:stream:done');
+        electron_1.ipcRenderer.removeAllListeners('chat:stream:error');
+        callbacks.onError(err);
+    };
+    electron_1.ipcRenderer.on('chat:stream:chunk', chunkHandler);
+    electron_1.ipcRenderer.once('chat:stream:done', doneHandler);
+    electron_1.ipcRenderer.once('chat:stream:error', errorHandler);
+    electron_1.ipcRenderer.invoke('chat:stream', body).finally(() => {
+        electron_1.ipcRenderer.removeListener('chat:stream:chunk', chunkHandler);
+    });
+};
 electron_1.contextBridge.exposeInMainWorld('api', {
     base: API_BASE,
     fetch: apiFetch,
+    chatStream,
+    chatStreamAbort: () => electron_1.ipcRenderer.send('chat:stream:abort'),
     quitApp: () => electron_1.ipcRenderer.invoke('app:quit'),
     selectFilesAndFolders: () => electron_1.ipcRenderer.invoke('dialog:selectFilesAndFolders'),
     selectDirectory: () => electron_1.ipcRenderer.invoke('dialog:selectDirectory'),
+    selectFile: (opts) => electron_1.ipcRenderer.invoke('dialog:selectFile', opts),
     openConfigDirInFileManager: (dir) => electron_1.ipcRenderer.invoke('settings:openConfigDirInFileManager', dir),
     getConfigDirSetting: () => electron_1.ipcRenderer.invoke('settings:getConfigDir'),
     setConfigDirSetting: (dir) => electron_1.ipcRenderer.invoke('settings:setConfigDir', dir),

@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { getOllamaModels, startOllama } from '../api';
+import { useChat } from '../contexts/ChatContext';
 
 type Status = 'checking' | 'running' | 'stopped' | 'api-down';
 
 export default function OllamaStatus() {
+  const { lastChatFailed } = useChat();
   const [status, setStatus] = useState<Status>('checking');
+  const [refreshSpinning, setRefreshSpinning] = useState(false);
 
   const check = () => {
     getOllamaModels()
@@ -65,14 +68,25 @@ export default function OllamaStatus() {
 
   return (
     <span className="flex items-center gap-1.5 text-sm">
-      <span className="w-2 h-2 rounded-full bg-green-500" title="Ollama running" />
-      <span className="text-whynot-muted">Ollama</span>
+      <span
+        className={`w-2 h-2 rounded-full shrink-0 ${lastChatFailed ? 'bg-amber-500' : 'bg-green-500'}`}
+        title={lastChatFailed ? 'Ollama reachable but chat is failing' : 'Ollama running'}
+      />
+      <span className="text-whynot-muted">
+        {lastChatFailed ? 'Ollama – chat failing' : 'Ollama'}
+      </span>
       <button
-        onClick={check}
+        onClick={() => {
+          setRefreshSpinning(true);
+          setTimeout(() => setRefreshSpinning(false), 400);
+          check();
+        }}
         className="px-2 py-0.5 rounded text-xs text-whynot-muted hover:text-whynot-body hover:bg-whynot-border/30"
         title="Refresh status"
       >
-        ↻
+        <span className={`inline-block ${refreshSpinning ? 'animate-spin-once' : ''}`}>
+          ↻
+        </span>
       </button>
     </span>
   );

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { getPreferences, savePreferences } from '../api';
 
-export type ChatMessage = { role: 'user' | 'assistant'; content: string };
+export type ChatMessage = { role: 'user' | 'assistant'; content: string; thinking?: string };
 
 export type ModelOptions = {
   temperature?: number;
@@ -43,7 +43,7 @@ function chatTitle(messages: ChatMessage[]): string {
 function isValidMessage(m: unknown): m is ChatMessage {
   if (!m || typeof m !== 'object') return false;
   const o = m as Record<string, unknown>;
-  return (o.role === 'user' || o.role === 'assistant') && typeof o.content === 'string';
+  return (o.role === 'user' || o.role === 'assistant') && typeof o.content === 'string' && (o.thinking === undefined || typeof o.thinking === 'string');
 }
 
 function isValidSession(obj: unknown): obj is ChatSession {
@@ -110,7 +110,11 @@ type ChatContextType = {
   deleteChat: (id: string) => void;
   addMessage: (msg: ChatMessage) => void;
   appendToLastAssistantMessage: (text: string) => void;
+  appendThinkingToLastAssistantMessage: (text: string) => void;
   setSelectedModel: (model: string) => void;
+  lastChatFailed: boolean;
+  setChatFailed: () => void;
+  setChatSucceeded: () => void;
   setKnowledgeBases: (kbs: string[]) => void;
   toggleKnowledgeBase: (kb: string) => void;
   setModelOptions: (opts: ModelOptions | undefined) => void;
@@ -134,6 +138,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const persisted = loadPersistedState();
     return persisted ? persisted.activeChatId : null;
   });
+  const [lastChatFailed, setLastChatFailed] = useState(false);
+
+  const setChatFailed = useCallback(() => setLastChatFailed(true), []);
+  const setChatSucceeded = useCallback(() => setLastChatFailed(false), []);
 
   useEffect(() => {
     savePersistedState(chats, activeChatId ?? chats[0]?.id ?? null);
@@ -220,6 +228,22 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     );
   }, [resolvedActiveId, chats]);
 
+  const appendThinkingToLastAssistantMessage = useCallback((text: string) => {
+    const targetId = resolvedActiveId ?? chats[0]?.id;
+    if (!targetId || !text) return;
+    setChats((prev) =>
+      prev.map((c) => {
+        if (c.id !== targetId) return c;
+        const msgs = c.messages;
+        if (msgs.length === 0 || msgs[msgs.length - 1]!.role !== 'assistant') return c;
+        const updated = [...msgs];
+        const last = updated[updated.length - 1]!;
+        updated[updated.length - 1] = { ...last, thinking: (last.thinking ?? '') + text };
+        return { ...c, messages: updated };
+      })
+    );
+  }, [resolvedActiveId, chats]);
+
   const setSelectedModel = useCallback((model: string) => {
     const targetId = resolvedActiveId ?? chats[0]?.id;
     if (!targetId) return;
@@ -287,6 +311,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         deleteChat,
         addMessage,
         appendToLastAssistantMessage,
+        appendThinkingToLastAssistantMessage,
+        lastChatFailed,
+        setChatFailed,
+        setChatSucceeded,
         setSelectedModel,
         setKnowledgeBases,
         toggleKnowledgeBase,

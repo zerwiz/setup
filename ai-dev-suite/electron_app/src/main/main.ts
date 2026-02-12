@@ -72,14 +72,17 @@ function saveSettings(settings: { configDir?: string }): void {
   writeFileSync(p, JSON.stringify(settings, null, 2), 'utf-8');
 }
 
-function startElixirAPI(): Promise<void> {
+function startElixirAPI(): Promise<boolean> {
+  if (process.env.AI_DEV_SUITE_API_STARTED === '1') {
+    return Promise.resolve(false);
+  }
   return new Promise((resolve) => {
     const rootDir = app.isPackaged
       ? path.join(process.resourcesPath, 'elixir_tui')
       : path.resolve(__dirname, '../../../elixir_tui');
     if (!existsSync(path.join(rootDir, 'mix.exs'))) {
       console.warn('Elixir project not found at', rootDir, '- start API manually: mix run -e "AiDevSuiteTui.API.start()"');
-      resolve();
+      resolve(false);
       return;
     }
 
@@ -99,9 +102,23 @@ function startElixirAPI(): Promise<void> {
     apiProcess.stderr?.on('data', (d) => process.stderr.write(d.toString()));
     apiProcess.on('error', (err) => console.error('API process error:', err));
 
-    // Give API time to compile and start (first run can be slow)
-    setTimeout(resolve, 4000);
+    // Give API time to spawn
+    setTimeout(() => resolve(true), 2000);
   });
+}
+
+async function waitForAPIReady(): Promise<void> {
+  const url = `http://localhost:${API_PORT}/api/ollama/models`;
+  const maxAttempts = 40; // 40 * 500ms = 20s
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      const res = await fetch(url);
+      if (res.ok || res.status === 500) return; // API is up (500 = Ollama not running, but API works)
+    } catch {
+      /* not ready yet */
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
 }
 
 function createWindow() {
@@ -114,6 +131,7 @@ function createWindow() {
       preload: path.join(__dirname, '../preload/preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      webSecurity: false, // allow fetch to localhost:41434 from file:// or cross-origin (fixes chat stream in Electron vs browser)
     },
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#030406',
@@ -132,7 +150,8 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
-  await startElixirAPI();
+  const apiStarted = await startElixirAPI();
+  if (apiStarted) await waitForAPIReady();
   createWindow();
 
   if (!process.env.NODE_ENV || process.env.NODE_ENV === 'production') {
@@ -144,7 +163,12 @@ app.whenReady().then(async () => {
   });
 });
 
-app.on('window-all-closed', () => {
+app.on('window-all-closed', async () => {
+  try {
+    await fetch(`http://localhost:${API_PORT}/api/ollama/stop`, { method: 'POST' });
+  } catch {
+    /* ignore */
+  }
   if (apiProcess) {
     apiProcess.kill();
     apiProcess = null;
@@ -152,7 +176,13 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-ipcMain.handle('app:quit', () => {
+ipcMain.handle('app:quit', async () => {
+  // Stop Ollama if we started it (so all processes exit on Quit)
+  try {
+    await fetch(`http://localhost:${API_PORT}/api/ollama/stop`, { method: 'POST' });
+  } catch {
+    // API may already be down
+  }
   if (apiProcess) {
     apiProcess.kill();
     apiProcess = null;
@@ -196,6 +226,85 @@ ipcMain.handle(
     return { canceled, path: filePaths?.[0] ?? '' };
   }
 );
+
+let chatStreamAbortController: AbortController | null = null;
+
+ipcMain.handle(
+  'chat:stream',
+  async (event, body: Record<string, unknown>) => {
+    chatStreamAbortController = new AbortController();
+    const url = `http://localhost:${API_PORT}/api/chat/stream`;
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: chatStreamAbortController.signal,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        event.sender.send('chat:stream:error', (data as { error?: string }).error || res.statusText);
+        return;
+      }
+      const reader = res.body?.getReader();
+      if (!reader) {
+        event.sender.send('chat:stream:error', 'No response body');
+        return;
+      }
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const data = JSON.parse(line) as { delta?: string; thinking?: string; done?: boolean; error?: string };
+            if (data.thinking) event.sender.send('chat:stream:chunk', { thinking: data.thinking });
+            if (data.delta) event.sender.send('chat:stream:chunk', { delta: data.delta });
+            if (data.done) event.sender.send('chat:stream:chunk', { done: true });
+            if (data.error) event.sender.send('chat:stream:error', data.error);
+          } catch {
+            /* ignore parse errors */
+          }
+        }
+      }
+      if (buffer.trim()) {
+        try {
+          const data = JSON.parse(buffer) as { delta?: string; thinking?: string; done?: boolean; error?: string };
+          if (data.thinking) event.sender.send('chat:stream:chunk', { thinking: data.thinking });
+          if (data.delta) event.sender.send('chat:stream:chunk', { delta: data.delta });
+          if (data.done) event.sender.send('chat:stream:chunk', { done: true });
+          if (data.error) event.sender.send('chat:stream:error', data.error);
+        } catch {
+          /* ignore */
+        }
+      }
+      event.sender.send('chat:stream:done');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg === 'The operation was aborted.') {
+        event.sender.send('chat:stream:done');
+      } else {
+        event.sender.send(
+          'chat:stream:error',
+          msg.includes('fetch') || msg.includes('network') || msg.includes('Failed')
+            ? 'Cannot reach API. Start it: ./start-ai-dev-suite-api.sh'
+            : msg
+        );
+      }
+    } finally {
+      chatStreamAbortController = null;
+    }
+  }
+);
+
+ipcMain.on('chat:stream:abort', () => {
+  chatStreamAbortController?.abort();
+});
 
 ipcMain.handle('settings:getConfigDir', () => loadSettings().configDir ?? '');
 

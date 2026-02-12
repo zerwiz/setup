@@ -3,6 +3,12 @@ export default {
   content: ['./src/renderer/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      keyframes: {
+        'spin-once': { from: { transform: 'rotate(0deg)' }, to: { transform: 'rotate(360deg)' } },
+      },
+      animation: {
+        'spin-once': 'spin-once 0.4s ease-out',
+      },
       colors: {
         whynot: {
           bg: '#030406',

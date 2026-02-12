@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Tools workspace core
 
-**zerwiz/setup is the main repo for tools.** Work there. Do not push tools to WhyNotProductionsHomepage.
+**zerwiz/setup is the main repo for tools.** Work there.
 
 ## Changelog and commits
 
@@ -17,7 +17,6 @@ alwaysApply: true
 
 - **Tools delivery:** zerwiz/setup. Push directly to zerwiz/setup.
 - **Curl URLs:** All must point to raw.githubusercontent.com/zerwiz/setup only.
-- WhyNotProductionsHomepage is for the homepage only; tools are never pushed there.
 
 ## Documentation
 

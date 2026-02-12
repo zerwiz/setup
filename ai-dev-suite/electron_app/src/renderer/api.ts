@@ -72,6 +72,17 @@ export async function startOllama(): Promise<{ ok?: boolean; error?: string }> {
   return (await api.post('/api/ollama/start', {})) as { ok?: boolean; error?: string };
 }
 
+export type AskDebuggerResult = { ok?: boolean; analysis?: string; error?: string };
+
+export async function askDebugger(message?: string, context?: string): Promise<AskDebuggerResult> {
+  return (await api.post('/api/debugger/ask', { message: message ?? '', context: context ?? '' }, { timeout: 70_000 })) as AskDebuggerResult;
+}
+
+export async function loadOllamaModel(model: string): Promise<{ ok?: boolean }> {
+  if (!model?.trim()) return { ok: false };
+  return (await api.post('/api/ollama/load', { model: model.trim() }, { timeout: 120_000 })) as { ok?: boolean };
+}
+
 export async function getDownloadableModels(): Promise<{ models: string[] }> {
   return (await api.get('/api/downloadable_models')) as { models: string[] };
 }
@@ -92,6 +103,7 @@ export async function sendChat(
 
 export type StreamCallbacks = {
   onDelta: (text: string) => void;
+  onThinking?: (text: string) => void;
   onDone: () => void;
   onError: (err: string) => void;
 };
@@ -114,9 +126,9 @@ export async function sendChatStream(
   knowledgeBases: string | string[] | undefined,
   callbacks: StreamCallbacks,
   options?: ModelOptions,
-  internetEnabled?: boolean
+  internetEnabled?: boolean,
+  abortSignal?: AbortSignal
 ): Promise<void> {
-  const url = `${API_BASE}/api/chat/stream`;
   const body: Record<string, unknown> = { model, messages };
   if (Array.isArray(knowledgeBases) && knowledgeBases.length > 0) {
     body.knowledge_bases = knowledgeBases;
@@ -131,12 +143,40 @@ export async function sendChatStream(
   if (internetEnabled) {
     body.internet_enabled = true;
   }
+
+  // Electron: use main-process proxy (no CORS, works when renderer fetch fails)
+  if (typeof window !== 'undefined' && window.api?.chatStream) {
+    if (abortSignal) {
+      abortSignal.addEventListener('abort', () => window.api?.chatStreamAbort?.());
+    }
+    return new Promise<void>((resolve) => {
+      window.api!.chatStream!(body, {
+        onChunk: (data: { delta?: string; thinking?: string; done?: boolean }) => {
+          if (data.thinking && callbacks.onThinking) callbacks.onThinking(data.thinking);
+          if (data.delta) callbacks.onDelta(data.delta);
+          if (data.done) callbacks.onDone();
+        },
+        onDone: () => {
+          callbacks.onDone();
+          resolve();
+        },
+        onError: (err) => {
+          callbacks.onError(err);
+          resolve();
+        },
+      });
+    });
+  }
+
+  // Browser: direct fetch
+  const url = `${API_BASE}/api/chat/stream`;
   let res: Response;
   try {
     res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: abortSignal,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -163,13 +203,15 @@ export async function sendChatStream(
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
+      if (abortSignal?.aborted) break;
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
       buffer = lines.pop() ?? '';
       for (const line of lines) {
         if (!line.trim()) continue;
         try {
-          const data = JSON.parse(line) as { delta?: string; done?: boolean; error?: string };
+          const data = JSON.parse(line) as { delta?: string; thinking?: string; done?: boolean; error?: string };
+          if (data.thinking && callbacks.onThinking) callbacks.onThinking(data.thinking);
           if (data.delta) callbacks.onDelta(data.delta);
           if (data.done) callbacks.onDone();
           if (data.error) callbacks.onError(data.error);
@@ -178,7 +220,8 @@ export async function sendChatStream(
     }
     if (buffer.trim()) {
       try {
-        const data = JSON.parse(buffer) as { delta?: string; done?: boolean; error?: string };
+        const data = JSON.parse(buffer) as { delta?: string; thinking?: string; done?: boolean; error?: string };
+        if (data.thinking && callbacks.onThinking) callbacks.onThinking(data.thinking);
         if (data.delta) callbacks.onDelta(data.delta);
         if (data.done) callbacks.onDone();
         if (data.error) callbacks.onError(data.error);
@@ -187,6 +230,10 @@ export async function sendChatStream(
     callbacks.onDone();
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    if (abortSignal?.aborted || msg === 'The operation was aborted.') {
+      callbacks.onDone();
+      return;
+    }
     callbacks.onError(
       msg.includes('fetch') || msg.includes('network') || msg.includes('Failed')
         ? 'Cannot reach API. Start it: ./start-ai-dev-suite-api.sh'
@@ -326,7 +373,9 @@ export async function getPreferences(): Promise<Preferences> {
   return (await api.get('/api/preferences')) as Preferences;
 }
 export async function savePreferences(prefs: Preferences): Promise<Preferences> {
-  return (await api.put('/api/preferences', prefs)) as Preferences;
+  return (await ('put' in api && typeof api.put === 'function'
+    ? api.put('/api/preferences', prefs)
+    : browserFetch('/api/preferences', { method: 'PUT', body: JSON.stringify(prefs) }))) as Preferences;
 }
 
 export async function saveConversationFacts(

@@ -2,7 +2,7 @@
 
 Terminal and desktop tools for AI development resources, install commands, and Ollama chat. Styled with the WhyNot Productions look.
 
-**Must be pushed to zerwiz/setup.** See `rules/deployment/rules.md` and `docs/for-zerwiz-setup/`.
+**Must be pushed to zerwiz/setup.** See `rules/` for deployment conventions.
 
 ## Purpose
 
@@ -35,7 +35,7 @@ Startup scripts install Elixir if needed. See [elixir-tui.md](./elixir-tui.md).
 
 ## In zerwiz/setup
 
-Edit `ai-dev-suite/install.sh` here. To update the homepage copy, run `./scripts/sync-to-homepage.sh`; that copies `for-zerwiz-setup/` to WhyNotProductionsHomepage.
+Edit `ai-dev-suite/install.sh` here. Push to zerwiz/setup to deploy.
 
 ## Zed & OpenCode (ACP)
 
@@ -64,6 +64,12 @@ See [START.md](./START.md#zed--opencode-acp), [ZED_OPENCODE_ACP.md](./ZED_OPENCO
 
 - **[START.md](./START.md)** – Quick start: API and Electron app commands
 - **[FUNCTIONS.md](./FUNCTIONS.md)** – Reference for all commands, features, and module functions
+- **[AGENT_COMMUNICATION.md](./AGENT_COMMUNICATION.md)** – Functional flow from Chat UI to Ollama (streaming, system prompt, research injection)
+- **[DEBUGGER.md](./DEBUGGER.md)** – Debugger: observer, A2A, Electron UI, edit files, Suite ↔ Debugger
+- **[DEBUGGER_CAPABILITIES.md](./DEBUGGER_CAPABILITIES.md)** – Full capabilities: health, logs, chat, run fixes, edit files
+- **[A2A_DEBUG.md](./A2A_DEBUG.md)** – Debug observer via Google's Agent2Agent (A2A) protocol
+- **[THINKING.md](./THINKING.md)** – Extended thinking: supported models, API usage, best practices
+- **[DEBUG_TRACKER.md](./DEBUG_TRACKER.md)** – Problem-solving log: issues, fixes, what’s done vs open
 - [STORAGE.md](./STORAGE.md) – Where memory, drive, and RAG data are stored
 - [LLAMACPP.md](./LLAMACPP.md) – llama.cpp vs Ollama: what the suite uses and why
 - [SERVER.md](./SERVER.md) – Server screen: llama.cpp start/stop and config

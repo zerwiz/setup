@@ -3,15 +3,17 @@ import {
   getOllamaModels,
   getDownloadableModels,
   getKnowledgeBases,
+  loadOllamaModel,
   pullModel,
   sendChatStream,
   startOllama,
   uploadToKnowledgeBase,
+  askDebugger,
 } from '../api';
 import { useChat, type ModelOptions } from '../contexts/ChatContext';
 
 export default function Chat() {
-  const { chats, activeChatId, activeChat, createChat, switchChat, deleteChat, addMessage, appendToLastAssistantMessage, setSelectedModel, setKnowledgeBases, toggleKnowledgeBase, setModelOptions, setChatTitle, toggleInternet } =
+  const { chats, activeChatId, activeChat, createChat, switchChat, deleteChat, addMessage, appendToLastAssistantMessage, appendThinkingToLastAssistantMessage, setSelectedModel, setKnowledgeBases, toggleKnowledgeBase, setModelOptions, setChatTitle, toggleInternet, setChatFailed, setChatSucceeded } =
     useChat();
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [kbPickerOpen, setKbPickerOpen] = useState(false);
@@ -29,10 +31,15 @@ export default function Chat() {
   const [error, setError] = useState<string | null>(null);
   const [pullTarget, setPullTarget] = useState<string | null>(null);
   const [startingOllama, setStartingOllama] = useState(false);
+  const [refreshSpinning, setRefreshSpinning] = useState(false);
+  const [debugHelpOpen, setDebugHelpOpen] = useState(false);
+  const [debugHelpLoading, setDebugHelpLoading] = useState(false);
+  const [debugHelpResult, setDebugHelpResult] = useState<string | null>(null);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const refreshModels = () => {
     getOllamaModels()
@@ -57,9 +64,18 @@ export default function Chat() {
   useEffect(() => refreshModels(), []);
   useEffect(() => refreshKbs(), []);
 
+  // Preload selected model when Chat is shown (so first message is fast)
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (ollamaRunning && selectedModel) {
+      loadOllamaModel(selectedModel).catch(() => {});
+    }
+  }, [selectedModel, ollamaRunning]);
+
+  // Scroll to bottom when messages change or during streaming
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (el) requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
+  }, [messages, loading]);
 
   useEffect(() => {
     const ta = textareaRef.current;
@@ -68,6 +84,28 @@ export default function Chat() {
     ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
   }, [input]);
 
+  const handleStop = () => {
+    abortControllerRef.current?.abort();
+  };
+
+  const handleAskDebugger = async (context?: string) => {
+    setDebugHelpOpen(true);
+    setDebugHelpLoading(true);
+    setDebugHelpResult(null);
+    try {
+      const r = await askDebugger(undefined, context ?? (error || '(no response)'));
+      if (r.ok && r.analysis) {
+        setDebugHelpResult(r.analysis);
+      } else {
+        setDebugHelpResult(r.error ?? 'Debugger unavailable');
+      }
+    } catch (e) {
+      setDebugHelpResult(String(e));
+    } finally {
+      setDebugHelpLoading(false);
+    }
+  };
+
   const handleSend = async () => {
     const text = input.trim();
     if (!text || loading) return;
@@ -75,29 +113,50 @@ export default function Chat() {
     setInput('');
     addMessage({ role: 'user', content: text });
     setLoading(true);
-    setError(null);
+    setError(null); // Clear stale error when retrying
+    abortControllerRef.current = new AbortController();
 
     const msgs = [...messages, { role: 'user', content: text }].map((m) => ({
       role: m.role,
       content: m.content,
     }));
 
-    addMessage({ role: 'assistant', content: '' });
+    addMessage({ role: 'assistant', content: '', thinking: '' });
 
+    let receivedContent = false;
     try {
       await sendChatStream(selectedModel, msgs, knowledgeBases, {
         onDelta: (delta) => {
+          receivedContent = true;
+          setChatSucceeded();
           appendToLastAssistantMessage(delta);
         },
-        onDone: () => setLoading(false),
+        onThinking: (thinking) => {
+          receivedContent = true;
+          setChatSucceeded();
+          appendThinkingToLastAssistantMessage(thinking);
+        },
+        onDone: () => {
+          setLoading(false);
+          abortControllerRef.current = null;
+          if (receivedContent) {
+            setError(null);
+            setChatSucceeded();
+          } else {
+            setChatFailed();
+          }
+        },
         onError: (err) => {
           setError(err);
           setLoading(false);
+          setChatFailed();
         },
-      }, modelOptions, internetEnabled);
+      }, modelOptions, internetEnabled, abortControllerRef.current.signal);
     } catch (e) {
       setError(String(e));
       setLoading(false);
+    } finally {
+      abortControllerRef.current = null;
     }
   };
 
@@ -245,12 +304,19 @@ export default function Chat() {
 
       <div className="flex flex-wrap gap-2 items-center mb-4">
         <button
-          onClick={ollamaRunning === false ? handleStartOllama : refreshModels}
+          onClick={() => {
+            setRefreshSpinning(true);
+            setTimeout(() => setRefreshSpinning(false), 400);
+            ollamaRunning === false ? handleStartOllama() : refreshModels();
+          }}
           disabled={ollamaRunning === false && startingOllama}
-          className="px-3 py-1.5 rounded text-sm bg-whynot-accent/20 text-whynot-accent hover:bg-whynot-accent/30 disabled:opacity-50"
+          className="px-3 py-1.5 rounded text-sm bg-whynot-accent/20 text-whynot-accent hover:bg-whynot-accent/30 disabled:opacity-50 inline-flex items-center gap-1"
           title={ollamaRunning === true ? 'Refresh model list' : 'Start Ollama'}
         >
-          {ollamaRunning === false ? (startingOllama ? 'Starting…' : 'Start Ollama') : 'Refresh'}
+          <span className={`inline-block ${refreshSpinning ? 'animate-spin-once' : ''}`}>
+            ↻
+          </span>
+          {ollamaRunning === false && startingOllama ? 'Starting…' : 'Refresh'}
         </button>
         <span className="flex items-center gap-1 rounded border border-whynot-border bg-whynot-surface">
           <select
@@ -332,17 +398,43 @@ export default function Chat() {
       )}
 
       {error && (
-        <div className="mb-2 p-2 rounded bg-red-500/20 border border-red-500/40 text-red-400 text-sm">
-          {error}
-          {(error.includes('fetch') || error.includes('Failed') || error.includes('network') || error.includes('Cannot reach API')) && (
-            <div className="mt-1 text-xs text-whynot-muted">
-              API running? Run: <code>./start-ai-dev-suite-api.sh</code> in another terminal
-            </div>
-          )}
+        <div className="mb-2 p-2 rounded bg-red-500/20 border border-red-500/40 text-red-400 text-sm flex items-start gap-2">
+          <div className="flex-1 min-w-0">
+            {error}
+            {(error.includes('fetch') || error.includes('Failed') || error.includes('network') || error.includes('Cannot reach API')) && (
+              <div className="mt-1 text-xs text-whynot-muted">
+                API running? Run: <code>./start-ai-dev-suite-api.sh</code> in another terminal
+              </div>
+            )}
+          </div>
+          <button type="button" onClick={() => handleAskDebugger(error)} className="shrink-0 px-2 py-1 rounded text-xs bg-whynot-accent/20 text-whynot-accent hover:bg-whynot-accent/30" title="Ask debugger for fix suggestions">Debug help</button>
+          <button type="button" onClick={() => setError(null)} className="shrink-0 text-red-400 hover:text-red-300" aria-label="Dismiss">×</button>
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto space-y-4 mb-4 p-2 rounded border border-whynot-border bg-whynot-surface min-h-[200px]">
+      {debugHelpOpen && (
+        <div className="mb-2 p-3 rounded border border-whynot-border bg-whynot-surface">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-medium text-whynot-body">Debugger suggestions</span>
+            <button type="button" onClick={() => setDebugHelpOpen(false)} className="text-whynot-muted hover:text-whynot-body">×</button>
+          </div>
+          {debugHelpLoading ? (
+            <p className="text-sm text-whynot-muted">Asking debugger…</p>
+          ) : debugHelpResult ? (
+            <>
+              <pre className="text-xs text-whynot-body whitespace-pre-wrap font-sans mb-2">{debugHelpResult}</pre>
+              <a href="http://localhost:5175" target="_blank" rel="noopener noreferrer" className="text-xs text-whynot-accent hover:underline">
+                Open debugger to run fixes →
+              </a>
+            </>
+          ) : null}
+        </div>
+      )}
+
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto space-y-4 mb-4 p-2 rounded border border-whynot-border bg-whynot-surface min-h-[200px]"
+      >
         {messages.map((m, i) => (
           <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
             <div
@@ -350,16 +442,36 @@ export default function Chat() {
                 m.role === 'user' ? 'bg-whynot-accent/30 text-whynot-body' : 'bg-whynot-border/30 text-whynot-body'
               }`}
             >
+              {m.role === 'assistant' && (m.thinking ?? '') && (
+                <div className="mb-2 pb-2 border-b border-whynot-border/50">
+                  <div className="text-[10px] uppercase tracking-wide text-whynot-muted mb-1">Thinking</div>
+                  <pre className="whitespace-pre-wrap font-sans text-xs text-whynot-muted">
+                    {m.thinking}
+                    {loading && i === messages.length - 1 && (
+                      <span className="inline-block w-2 h-3 ml-0.5 bg-whynot-muted animate-pulse align-middle" aria-hidden />
+                    )}
+                  </pre>
+                </div>
+              )}
               <pre className="whitespace-pre-wrap font-sans">
-                {m.content || (loading && i === messages.length - 1 ? '…' : '')}
-                {loading && i === messages.length - 1 && m.role === 'assistant' && (
-                  <span className="inline-block w-2 h-4 ml-0.5 bg-whynot-accent animate-pulse align-middle" aria-hidden />
+                {m.content || (loading && i === messages.length - 1 && !(m.thinking ?? '') ? '…' : '')}
+                {loading && i === messages.length - 1 && m.role === 'assistant' && !(m.thinking ?? '') && (
+                  <>
+                    <span className="inline-block w-2 h-4 ml-0.5 bg-whynot-accent animate-pulse align-middle" aria-hidden title="Waiting for response…" />
+                    <span className="ml-1 text-xs text-whynot-muted">(first load can take 1–2 min)</span>
+                  </>
+                )}
+                {!loading && m.role === 'assistant' && !m.content && !(m.thinking ?? '') && (
+                  <NoResponseDebug
+                    onTryDefaultKb={() => setKnowledgeBases(['default'])}
+                    onAskDebugger={() => handleAskDebugger('Chat returned (no response)')}
+                    currentKb={knowledgeBases}
+                  />
                 )}
               </pre>
             </div>
           </div>
         ))}
-        <div ref={scrollRef} />
       </div>
 
       <div className="flex gap-2 items-end">
@@ -406,13 +518,87 @@ export default function Chat() {
           {uploadingDoc ? 'Uploading…' : 'Upload'}
         </button>
         <button
-          onClick={handleSend}
-          disabled={loading}
-          className="px-4 py-2 rounded bg-whynot-accent text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
+          onClick={loading ? handleStop : handleSend}
+          disabled={!loading && !input.trim()}
+          className={`px-4 py-2 rounded text-sm font-medium ${
+            loading
+              ? 'bg-whynot-muted text-whynot-body hover:bg-whynot-border'
+              : 'bg-whynot-accent text-white hover:opacity-90 disabled:opacity-50'
+          }`}
         >
-          Send
+          {loading ? 'Stop' : 'Send'}
         </button>
       </div>
+      <a
+        href="https://github.com/zerwiz/setup"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-2 block text-xs text-whynot-muted hover:text-whynot-link transition-colors"
+      >
+        github.com/zerwiz/setup
+      </a>
+    </div>
+  );
+}
+
+const DEBUG_STEPS = [
+  'Click "Get debug help" above for debugger fix suggestions',
+  'Try KB: default — large KB can cause empty replies',
+  'First model load can take 1–2 min; wait and retry',
+  'Ollama running? Click ↻ Refresh',
+  'Run app from terminal to see API logs',
+  'Port 41434 free? Kill other API instances',
+  'curl -s http://localhost:41434/api/ollama/models',
+  'curl -s http://localhost:11434/api/tags',
+  'ollama list — model exists?',
+  'ollama run MODEL hello — direct test',
+  'mix deps.get && mix compile in elixir_tui',
+  'Firewall/VPN blocking localhost?',
+  'Model too large? Try smaller model (14B needs 1–2 min first load)',
+];
+
+function NoResponseDebug({
+  onTryDefaultKb,
+  onAskDebugger,
+  currentKb = ['default'],
+}: {
+  onTryDefaultKb?: () => void;
+  onAskDebugger?: () => void;
+  currentKb?: string[];
+}) {
+  const [open, setOpen] = useState(false);
+  const isDefaultKb = currentKb.length === 1 && currentKb[0] === 'default';
+  return (
+    <div className="text-whynot-muted">
+      <span className="italic">(no response)</span>{' '}
+      {onAskDebugger && (
+        <button type="button" onClick={onAskDebugger} className="text-xs text-whynot-accent hover:underline mr-1" title="Ask debugger for fix suggestions">
+          Get debug help
+        </button>
+      )}
+      {!isDefaultKb && onTryDefaultKb && (
+        <button
+          type="button"
+          onClick={onTryDefaultKb}
+          className="text-xs text-whynot-accent hover:underline mr-1"
+        >
+          Try default KB
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="text-xs text-whynot-accent hover:underline"
+      >
+        {open ? 'hide debug' : 'debug'}
+      </button>
+      {open && (
+        <ul className="mt-2 text-xs space-y-1 list-disc list-inside text-whynot-muted max-w-md">
+          {DEBUG_STEPS.map((s, i) => (
+            <li key={i}>{s}</li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

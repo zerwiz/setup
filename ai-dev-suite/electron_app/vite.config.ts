@@ -17,5 +17,6 @@ export default defineConfig({
   },
   server: {
     port: 5174,
+    strictPort: true, // Fail if 5174 taken; Electron expects this port
   },
 });

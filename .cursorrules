@@ -1,11 +1,10 @@
 # Tools – WhyNot Productions
 
-Rules when working on tools. **zerwiz/setup is the main repo.** Develop there, commit there, push there. Do not push tools to WhyNotProductionsHomepage.
+Rules when working on tools. **zerwiz/setup is the main repo.** Develop there, commit there, push there.
 
 ## Version control and changelog
 
 - **Main repo for tools:** https://github.com/zerwiz/setup — develop here, commit, PR, changelog, curl delivery
-- **WhyNotProductionsHomepage:** Homepage only. Do not push tools here.
 - **Default branch:** `main`. Use feature/fix branches for larger changes (see `rules/services/github/rules.md`).
 - **Changelog:** Update `doc/CHANGELOG.md` in zerwiz/setup before every commit that changes behavior or content.
 - **Commit messages:** Prefer conventional style: `feat: ...`, `fix: ...`, `docs: ...`, `chore: ...`.
@@ -13,7 +12,7 @@ Rules when working on tools. **zerwiz/setup is the main repo.** Develop there, c
 
 ## Deployment
 
-- **Tools live in zerwiz/setup.** Push directly to zerwiz/setup. No sync from WhyNotProductionsHomepage.
+- **Tools live in zerwiz/setup.** Push directly to zerwiz/setup.
 - **Curl URLs:** All commands point to raw.githubusercontent.com/zerwiz/setup only.
 
 ## Rules and docs
