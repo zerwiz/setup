@@ -119,7 +119,7 @@ if [[ "$OS" != "windows" ]] && [[ "$OS" != "unknown" ]]; then
     trap 'rm -rf "$TMP"' EXIT
     cd "$TMP"
     curl -fsSL "https://github.com/zerwiz/setup/archive/refs/heads/main.tar.gz" | tar xz
-    cd setup-main/elixir_tui
+    cd setup-main/ai-dev-suite/elixir_tui
     if [[ -f mix.exs ]]; then
       mix deps.get 2>/dev/null || true
       mix escript.build 2>/dev/null || true

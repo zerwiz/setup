@@ -49,13 +49,18 @@ Options: `ollama`, `zed`, `lm`, `pinokio`, `claw` (or `1`–`5`).
 
 ```
 setup/
-├── README.md            # This file
+├── README.md
 ├── setup.sh             # Workshop Setup
 ├── run-tui.sh           # AI Dev Suite TUI (quick run)
-└── ai-dev-suite/
-    ├── README.md
-    ├── install.sh       # Display / install AI dev tools
-    └── install-full.sh  # Full install (API, Web, TUI, Electron)
+├── ai-dev-suite/        # Elixir TUI, Electron app, install scripts
+├── doc/                 # AI Dev Suite, RAG docs
+├── rag/                 # RAG script and deps
+├── install-ai-dev-suite.sh
+├── start-ai-dev-suite-api.sh
+├── start-ai-dev-suite-web.sh
+├── start-ai-dev-suite-tui.sh
+├── start-ai-dev-suite-electron.sh
+└── TOOLS_README.md
 ```
 
 ## Source

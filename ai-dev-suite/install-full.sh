@@ -70,7 +70,7 @@ else
   cd "$(find . -maxdepth 1 -type d -name '*-main' | head -1)"
 fi
 
-if [[ ! -d tools/ai-dev-suite ]]; then
+if [[ ! -d ai-dev-suite ]]; then
   echo -e "${RED}Unexpected repo structure. Aborting.${RESET}"
   exit 1
 fi
@@ -78,7 +78,7 @@ fi
 # Install to ~/.local/share/ai-dev-suite
 mkdir -p "$(dirname "$INSTALL_DIR")"
 rm -rf "$INSTALL_DIR"
-cp -r tools/ai-dev-suite "$INSTALL_DIR"
+cp -r ai-dev-suite "$INSTALL_DIR"
 
 echo -e "${DIM}Installing Elixir deps...${RESET}"
 (cd "$INSTALL_DIR/elixir_tui" && mix deps.get 2>/dev/null) || true
