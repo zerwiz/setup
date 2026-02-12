@@ -63,6 +63,7 @@ curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/setup.sh | bash
 | [Functions](./ai-dev-suite/FUNCTIONS.md) | Full command/module reference (chat, drive, memory, research) |
 | [Storage](./ai-dev-suite/STORAGE.md) | Where memory, drive, and RAG data are stored |
 | [llama.cpp](./ai-dev-suite/LLAMACPP.md) | llama.cpp vs Ollama; Server screen placeholder |
+| [Ollama GPU](./ai-dev-suite/OLLAMA_GPU.md) | Use GPU, not CPU-only: official install, NVIDIA/AMD setup |
 | [Zed & OpenCode ACP](./ai-dev-suite/ZED_OPENCODE_ACP.md) | Full implementation: connect AI Dev Suite to Zed/OpenCode via Agent Client Protocol |
 | [Planning](./ai-dev-suite/PLANNING.md) | Roadmap and implementation status |
 | [UI Planning](./ai-dev-suite/UI_PLANNING.md) | Desktop app architecture (Electron + React + Elixir) |

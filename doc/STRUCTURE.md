@@ -17,6 +17,8 @@ setup/                          # zerwiz/setup – main repo for tools
 ├── scripts/                    # Automation scripts
 ├── setup.sh                    # Workshop setup
 ├── run-tui.sh                  # AI Dev Suite TUI launcher
+├── run-debugger.sh             # Debugger quick run (curl | bash)
+├── run-observer.sh             # Observer quick run (curl | bash)
 ├── start-ai-dev-suite-*.sh     # Launchers (api, tui, electron, web, acp)
 ├── install-ai-dev-suite.sh     # Root install script
 ├── ensure-rag-deps.sh          # Ensure RAG Python deps
@@ -37,7 +39,7 @@ setup/                          # zerwiz/setup – main repo for tools
 | `install.ps1` | PowerShell install (Windows). |
 | `install-full.sh` | Full install (API, Web, TUI, Electron). |
 
-**Start scripts** (in repo root): `start-ai-dev-suite-api.sh`, `start-ai-dev-suite-tui.sh`, `start-ai-dev-suite-electron.sh`, `start-ai-dev-suite-web.sh`, `start-ai-dev-suite-acp.sh`, `start-ai-dev-suite-debugger.sh` (debugger: API + Ollama + UI).
+**Start scripts** (in repo root): `start-ai-dev-suite-api.sh`, `start-ai-dev-suite-tui.sh`, `start-ai-dev-suite-electron.sh`, `start-ai-dev-suite-web.sh`, `start-ai-dev-suite-acp.sh`, `start-ai-dev-suite-debugger.sh`, `start-ai-dev-suite-and-debugger.sh` (Suite + Debugger together).
 
 ---
 

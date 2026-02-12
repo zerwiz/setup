@@ -12,7 +12,27 @@ Installs to `~/.local/share/ai-dev-suite`. Creates launchers: `ai-dev-suite-elec
 curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/ai-dev-suite/install-full.sh | bash
 ```
 
-**After install:** Run `ai-dev-suite-electron` (desktop app) or `ai-dev-suite-tui` (terminal menu).
+**After install:** Run `ai-dev-suite-electron` (desktop app), `ai-dev-suite-tui` (terminal menu), or `ai-dev-suite-debugger` (logs, fix suggestions).
+
+---
+
+## AI Dev Suite – Debugger (Quick Run)
+
+Downloads and starts the debugger (API + Ollama + Debugger UI). Diagnose "(no response)", view logs, get fix suggestions.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/run-debugger.sh | bash
+```
+
+---
+
+## AI Dev Suite – Observer (Quick Run)
+
+Terminal observer. Tails API + Ollama logs, health checks every 10s. Use when Suite shows "(no response)".
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/run-observer.sh | bash
+```
 
 ---
 
@@ -58,7 +78,7 @@ Options: `zed`, `opencode`, `ollama`, `lm`, `openclaw`, `workshop` (or `1`–`6`
 |------|---------|
 | **Zed** | `curl -fsSL https://zed.dev/install.sh \| sh` |
 | **OpenCode** | `curl -fsSL https://opencode.ai/install \| bash` |
-| **Ollama** | `curl -fsSL https://ollama.com/install.sh \| sh` |
+| **Ollama** | `curl -fsSL https://ollama.com/install.sh \| sh` — GPU: use official install; AMD Linux add ROCm (see [OLLAMA_GPU.md](./ai-dev-suite/OLLAMA_GPU.md)) |
 | **LM Studio** | `curl -fsSL https://lmstudio.ai/install.sh \| bash` |
 | **OpenClaw** | `curl -fsSL https://openclaw.ai/install.sh \| bash` |
 | **Workshop Setup** | `curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/setup.sh \| bash` |

@@ -3,8 +3,13 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Start Ollama if available and not already running
+# Kill any running Ollama, then start fresh (ensures GPU-capable binary if installed; see doc/ai-dev-suite/OLLAMA_GPU.md)
 if command -v ollama >/dev/null 2>&1; then
+  if ollama list >/dev/null 2>&1; then
+    echo "Stopping existing Ollama..."
+    pkill -x ollama 2>/dev/null || killall ollama 2>/dev/null || true
+    sleep 2
+  fi
   if ! ollama list >/dev/null 2>&1; then
     echo "Starting Ollama..."
     ollama serve >> /tmp/ollama.log 2>&1 &

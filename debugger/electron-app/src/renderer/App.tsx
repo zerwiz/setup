@@ -64,6 +64,7 @@ export default function App() {
   const [pullLoading, setPullLoading] = useState<string | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
   const [observerOpen, setObserverOpen] = useState(true);
+  const [quitSaving, setQuitSaving] = useState(false);
   const [observerChatMessages, setObserverChatMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const [observerChatInput, setObserverChatInput] = useState('');
   const [observerChatLoading, setObserverChatLoading] = useState(false);
@@ -141,11 +142,11 @@ export default function App() {
         window.debugApi?.readLog?.('rag') ?? { lines: [], error: null },
         window.debugApi?.readLog?.('electron') ?? { lines: [], error: null },
       ]);
-      setApiLog(api?.lines ?? []);
-      setOllamaLog(ollama?.lines ?? []);
-      setA2aLog(a2a?.lines ?? []);
-      setRagLog(rag?.lines ?? []);
-      setElectronLog(electron?.lines ?? []);
+      setApiLog((prev) => [...prev, ...(api?.lines ?? [])]);
+      setOllamaLog((prev) => [...prev, ...(ollama?.lines ?? [])]);
+      setA2aLog((prev) => [...prev, ...(a2a?.lines ?? [])]);
+      setRagLog((prev) => [...prev, ...(rag?.lines ?? [])]);
+      setElectronLog((prev) => [...prev, ...(electron?.lines ?? [])]);
     } catch (e) {
       if (!silent) console.error('Logs failed:', e);
     } finally {
@@ -191,8 +192,8 @@ export default function App() {
     if (f && !f.error) setFiles({ configFiles: f.configFiles, logFiles: f.logFiles, projectFiles: f.projectFiles });
     const apiLogFresh = apiRes?.lines ?? apiLog;
     const ollamaLogFresh = ollamaRes?.lines ?? ollamaLog;
-    setApiLog(apiLogFresh);
-    setOllamaLog(ollamaLogFresh);
+    setApiLog((prev) => [...prev, ...(apiLogFresh ?? [])]);
+    setOllamaLog((prev) => [...prev, ...(ollamaLogFresh ?? [])]);
     const ctx = [
       `API: ${health?.api ?? '?'} | Ollama: ${health?.ollama ?? '?'} | Vite: ${health?.vite ?? '?'}`,
       '\n--- PROCESSES ---\n',
@@ -407,7 +408,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-whynot-bg dots-bg flex flex-col">
       <header className="border-b border-whynot-border bg-whynot-surface/80 backdrop-blur sticky top-0 z-10">
-        <div className="flex items-center justify-between h-14 px-6">
+        <div className="flex items-center justify-between h-16 px-6">
           <h1 className="text-lg font-semibold">
             <span className="text-whynot-accent">AI Dev Suite</span>
             <span className="text-whynot-body"> Debugger</span>
@@ -467,6 +468,29 @@ export default function App() {
               title="Explain all features"
             >
               ℹ Info
+            </button>
+            <button
+              onClick={async () => {
+                if (quitSaving || !window.debugApi?.saveSessionLogs || !window.debugApi?.quitApp) return;
+                setQuitSaving(true);
+                try {
+                  await window.debugApi.saveSessionLogs({
+                    api: apiLog,
+                    ollama: ollamaLog,
+                    a2a: a2aLog,
+                    rag: ragLog,
+                    electron: electronLog,
+                  });
+                  await window.debugApi.quitApp();
+                } catch {
+                  setQuitSaving(false);
+                }
+              }}
+              disabled={quitSaving}
+              className="px-3 py-2 rounded text-sm text-red-500 hover:text-red-400 hover:bg-red-500/20 disabled:opacity-50"
+              title="Save session logs and quit"
+            >
+              {quitSaving ? 'Saving…' : 'Quit'}
             </button>
           </div>
         </div>

@@ -65,7 +65,7 @@ tool "2. LM Studio" \
   "https://lmstudio.ai"
 
 tool "3. Ollama" \
-  "Run large language models locally. Simple setup." \
+  "Run LLMs locally (GPU when drivers present). Use official install; AMD Linux: add ROCm package (see OLLAMA_GPU.md)." \
   "$INSTALL_OLLAMA" \
   "https://ollama.com"
 
@@ -106,7 +106,7 @@ do_install() {
   case "$1" in
     zed|1)     echo ""; echo "Installing Zed...";      eval "$INSTALL_ZED" ;;
     lm|2)      echo ""; echo "Installing LM Studio..."; eval "$INSTALL_LM" ;;
-    ollama|3)  echo ""; echo "Installing Ollama...";   eval "$INSTALL_OLLAMA" ;;
+    ollama|3)  echo ""; echo "Installing Ollama...";   eval "$INSTALL_OLLAMA"; echo ""; echo "AMD GPU on Linux? After install, add ROCm: curl -fsSL https://ollama.com/download/ollama-linux-amd64-rocm.tar.zst | sudo tar x -C /usr" ;;
     pinokio|4) echo ""; echo "Installing Pinokio...";  eval "$INSTALL_PINOKIO" ;;
     claw|5)    echo ""; echo "Installing ClawCode..."; eval "$INSTALL_CLAW" ;;
     *)         echo ""; echo "Unknown: $1. Use: ollama, zed, lm, pinokio, claw" ;;

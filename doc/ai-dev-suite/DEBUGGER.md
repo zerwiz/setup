@@ -35,6 +35,15 @@ DEBUG=1 ./start-ai-dev-suite-debugger.sh
 ./debugger/start-a2a.sh
 ```
 
+**Without cloning the repo:**
+```bash
+# Debugger (quick run, no install)
+curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/run-debugger.sh | bash
+
+# Observer only (terminal)
+curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/run-observer.sh | bash
+```
+
 ---
 
 ## Electron UI (`electron-app/`)

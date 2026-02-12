@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# AI Dev Suite – Full install (API, Web, TUI, Electron)
+# AI Dev Suite – Full install (API, Web, TUI, Electron, Debugger)
 # Installs to ~/.local/share/ai-dev-suite (or AI_DEV_SUITE_DIR) and creates launchers in ~/bin or ~/.local/bin
 # Run: curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/ai-dev-suite/install-full.sh | bash
 #
@@ -39,7 +39,7 @@ RESET='\033[0m'
 
 echo ""
 echo -e "${RED}●${RESET} ${RED}Zerwiz AI${RESET} ${WHITE}Dev Suite${RESET} – WhyNot Productions"
-echo -e "${DIM}Installing API, Web UI, TUI, and Electron app...${RESET}"
+echo -e "${DIM}Installing API, Web UI, TUI, Electron app, and Debugger...${RESET}"
 echo ""
 
 # Check basic deps
@@ -67,7 +67,7 @@ curl -fsSL "${REPO}/archive/refs/heads/${BRANCH}.tar.gz" | tar xz
 EXTRACT_DIR="$(find . -maxdepth 1 -type d -name '*-main' | head -1)"
 [[ -z "$EXTRACT_DIR" ]] && EXTRACT_DIR="setup-main"
 cd "$EXTRACT_DIR"
-# ai-dev-suite at root (zerwiz/setup) or in tools/ (legacy)
+# ai-dev-suite and debugger at root (zerwiz/setup)
 AI_DEV_SUITE_DIR=""
 [[ -d "ai-dev-suite" ]] && AI_DEV_SUITE_DIR="ai-dev-suite"
 [[ -z "$AI_DEV_SUITE_DIR" && -d "tools/ai-dev-suite" ]] && AI_DEV_SUITE_DIR="tools/ai-dev-suite"
@@ -76,16 +76,27 @@ if [[ -z "$AI_DEV_SUITE_DIR" ]] || [[ ! -d "$AI_DEV_SUITE_DIR" ]]; then
   exit 1
 fi
 
-# Install to ~/.local/share/ai-dev-suite
+# Install full suite (ai-dev-suite + debugger + start scripts) to ~/.local/share/ai-dev-suite
 mkdir -p "$(dirname "$INSTALL_DIR")"
 rm -rf "$INSTALL_DIR"
-cp -r "$AI_DEV_SUITE_DIR" "$INSTALL_DIR"
+mkdir -p "$INSTALL_DIR"
+cp -r "$AI_DEV_SUITE_DIR" "$INSTALL_DIR/ai-dev-suite"
+[[ -d "debugger" ]] && cp -r "debugger" "$INSTALL_DIR/"
+for f in start-ai-dev-suite-debugger.sh start-ai-dev-suite-and-debugger.sh ensure-rag-deps.sh; do
+  [[ -f "$f" ]] && cp "$f" "$INSTALL_DIR/"
+done
+
+# Suite paths (nested under ai-dev-suite)
+SUITE="$INSTALL_DIR/ai-dev-suite"
 
 echo -e "${DIM}Installing Elixir deps...${RESET}"
-(cd "$INSTALL_DIR/elixir_tui" && mix deps.get 2>/dev/null) || true
+(cd "$SUITE/elixir_tui" && mix deps.get 2>/dev/null) || true
 
 echo -e "${DIM}Installing Node deps (Electron app)...${RESET}"
-(cd "$INSTALL_DIR/electron_app" && npm install 2>/dev/null) || true
+(cd "$SUITE/electron_app" && npm install 2>/dev/null) || true
+
+echo -e "${DIM}Installing Debugger deps...${RESET}"
+[[ -d "$INSTALL_DIR/debugger/electron-app" ]] && (cd "$INSTALL_DIR/debugger/electron-app" && npm install 2>/dev/null) || true
 
 # Create launchers
 mkdir -p "$BIN_DIR"
@@ -93,30 +104,41 @@ mkdir -p "$BIN_DIR"
 # Write launchers with actual INSTALL_DIR (works with custom dirs, XDG, etc.)
 cat > "$BIN_DIR/ai-dev-suite-api" << EOF
 #!/usr/bin/env bash
-cd "$INSTALL_DIR/elixir_tui" && exec mix run -e "AiDevSuiteTui.API.start()"
+cd "$SUITE/elixir_tui" && exec mix run -e "AiDevSuiteTui.API.start()"
 EOF
 
 cat > "$BIN_DIR/ai-dev-suite-web" << EOF
 #!/usr/bin/env bash
 cleanup() { kill \$API_PID 2>/dev/null; exit 0; }
 trap cleanup SIGINT SIGTERM
-cd "$INSTALL_DIR/elixir_tui" && mix run -e "AiDevSuiteTui.API.start()" &
+cd "$SUITE/elixir_tui" && mix run -e "AiDevSuiteTui.API.start()" &
 API_PID=\$!
 sleep 3
-cd "$INSTALL_DIR/electron_app" && exec npm run dev:vite
+cd "$SUITE/electron_app" && exec npm run dev:vite
 EOF
 
 cat > "$BIN_DIR/ai-dev-suite-tui" << EOF
 #!/usr/bin/env bash
-cd "$INSTALL_DIR/elixir_tui" && exec ./start.sh
+cd "$SUITE/elixir_tui" && exec ./start.sh
 EOF
 
 cat > "$BIN_DIR/ai-dev-suite-electron" << EOF
 #!/usr/bin/env bash
-cd "$INSTALL_DIR/electron_app" && exec npm run dev
+cd "$SUITE/electron_app" && exec npm run dev
+EOF
+
+cat > "$BIN_DIR/ai-dev-suite-debugger" << EOF
+#!/usr/bin/env bash
+cd "$INSTALL_DIR" && exec ./start-ai-dev-suite-debugger.sh
+EOF
+
+cat > "$BIN_DIR/ai-dev-suite-and-debugger" << EOF
+#!/usr/bin/env bash
+cd "$INSTALL_DIR" && exec ./start-ai-dev-suite-and-debugger.sh
 EOF
 
 chmod +x "$BIN_DIR"/ai-dev-suite-*
+chmod +x "$INSTALL_DIR"/*.sh 2>/dev/null || true
 
 # Add ~/bin to PATH if needed
 if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
@@ -134,11 +156,13 @@ fi
 echo ""
 echo -e "${DIM}Installed to $INSTALL_DIR${RESET}"
 echo -e "${DIM}Launchers in $BIN_DIR:${RESET}"
-echo "  ai-dev-suite-api      – API only (http://localhost:41434)"
-echo "  ai-dev-suite-web      – API + browser UI (http://localhost:5174)"
-echo "  ai-dev-suite-tui      – Terminal menu"
-echo "  ai-dev-suite-electron – Desktop app"
+echo "  ai-dev-suite-api           – API only (http://localhost:41434)"
+echo "  ai-dev-suite-web           – API + browser UI (http://localhost:5174)"
+echo "  ai-dev-suite-tui           – Terminal menu"
+echo "  ai-dev-suite-electron      – Desktop app"
+echo "  ai-dev-suite-debugger      – Debugger UI (logs, fix suggestions)"
+echo "  ai-dev-suite-and-debugger  – Suite + Debugger together"
 echo ""
-echo -e "${DIM}Run: ai-dev-suite-web   (or ai-dev-suite-tui, ai-dev-suite-electron)${RESET}"
+echo -e "${DIM}Run: ai-dev-suite-electron   (or ai-dev-suite-debugger for logs/fixes)${RESET}"
 echo -e "${DIM}More: whynotproductions.netlify.app${RESET}"
 echo ""

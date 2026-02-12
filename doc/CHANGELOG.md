@@ -9,6 +9,16 @@ Format: list entries under a date/version heading; use present tense (“Add …
 
 ## [Unreleased]
 
+- CURL_INSTALLS: add Share blocks section with correct zerwiz/setup URLs for homepage/share pages (fix old WhyNotProductionsHomepage/for-zerwiz-setup URLs).
+- Add run-debugger.sh, run-observer.sh – curl | bash quick run for debugger and observer (no permanent install).
+- install-full.sh: include debugger – install ai-dev-suite + debugger + start scripts; add launchers ai-dev-suite-debugger, ai-dev-suite-and-debugger.
+- CURL_INSTALLS, INSTALL_COMMANDS: document debugger and observer curl commands.
+- Debugger: logs start empty (session-only); saved to ~/.config/ai-dev-suite/debugger_sessions/debugger_YYYY-MM-DD_HHmmss.log on Quit.
+- Debugger: add Quit button (saves session logs, then exits) – same pattern as Suite.
+- Add start-ai-dev-suite-and-debugger.sh – starts Suite + Debugger together; Suite in foreground, Debugger in background; Ctrl+C stops both.
+- Start scripts: kill existing Ollama before starting – ensures fresh start with whatever ollama is in PATH (GPU if installed via official/OLLAMA_GPU); debugger, api, web, electron.
+- Add OLLAMA_GPU.md – use official install for GPU; AMD Linux: ROCm package. Update install.sh, START.md, INSTALL_COMMANDS, README.
+- README: add Debugger and Observer – Tools table, "Debugger — Observer & diagnose" section, structure, doc link.
 - Debugger: Info modal – Timeouts section, updated Observer/Chat/RAG descriptions.
 - Debugger: Observer Chat styled like Debugger Chat – model selector, bubbles, + memory, same placeholder.
 - Debugger: increase chat timeout to 5 min and analysis to 3 min; clearer timeout error messages.

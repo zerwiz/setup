@@ -2,6 +2,9 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('debugApi', {
   readLog: (name: 'api' | 'ollama' | 'a2a' | 'rag' | 'electron') => ipcRenderer.invoke('debug:readLog', name),
+  saveSessionLogs: (payload: { api: string[]; ollama: string[]; a2a: string[]; rag: string[]; electron: string[] }) =>
+    ipcRenderer.invoke('debug:saveSessionLogs', payload),
+  quitApp: () => ipcRenderer.invoke('app:quit'),
   getHealth: () => ipcRenderer.invoke('debug:getHealth'),
   runTestChat: () => ipcRenderer.invoke('debug:runTestChat'),
   runAnalysis: (payload: { context: string; model?: string | null }) => ipcRenderer.invoke('debug:runAnalysis', payload),

@@ -304,25 +304,62 @@ function createWindow() {
   win.once('ready-to-show', () => win.show());
 }
 
-// IPC: read log file (last N lines)
+// Session-based logs: start empty, only show lines added during this session
+const sessionLogLastRead: Record<string, number> = {};
+const LOG_PATHS: Record<string, string> = {
+  api: '/tmp/ai-dev-suite-api.log',
+  ollama: '/tmp/ollama.log',
+  a2a: '/tmp/ai-dev-suite-debug-a2a.log',
+  rag: path.join(os.homedir(), '.config', 'ai-dev-suite', 'rag.log'),
+  electron: '/tmp/ai-dev-suite-electron.log',
+};
+
 ipcMain.handle('debug:readLog', (_ev, name: 'api' | 'ollama' | 'a2a' | 'rag' | 'electron') => {
-  const configDir = path.join(os.homedir(), '.config', 'ai-dev-suite');
-  const paths: Record<string, string> = {
-    api: '/tmp/ai-dev-suite-api.log',
-    ollama: '/tmp/ollama.log',
-    a2a: '/tmp/ai-dev-suite-debug-a2a.log',
-    rag: path.join(configDir, 'rag.log'),
-    electron: '/tmp/ai-dev-suite-electron.log',
-  };
-  const p = paths[name];
+  const p = LOG_PATHS[name];
   if (!p || !existsSync(p)) return { lines: [], error: null };
   try {
     const content = readFileSync(p, 'utf-8');
-    const lines = content.split('\n').filter(Boolean).slice(-50);
-    return { lines, error: null };
+    const allLines = content.split('\n').filter((l) => l.trim() !== '');
+    if (sessionLogLastRead[name] === undefined) {
+      sessionLogLastRead[name] = allLines.length;
+      return { lines: [], error: null };
+    }
+    const newLines = allLines.slice(sessionLogLastRead[name]);
+    sessionLogLastRead[name] = allLines.length;
+    return { lines: newLines, error: null };
   } catch (e) {
     return { lines: [], error: String(e) };
   }
+});
+
+// Save session logs on quit (called by renderer before quitApp)
+ipcMain.handle('debug:saveSessionLogs', (_ev, payload: { api: string[]; ollama: string[]; a2a: string[]; rag: string[]; electron: string[] }) => {
+  const sessionsDir = path.join(os.homedir(), '.config', 'ai-dev-suite', 'debugger_sessions');
+  try {
+    if (!existsSync(sessionsDir)) mkdirSync(sessionsDir, { recursive: true });
+    const timestamp = new Date().toISOString().slice(0, 19).replace('T', '_').replace(/:/g, '');
+    const outPath = path.join(sessionsDir, `debugger_${timestamp}.log`);
+    const sections = [
+      ['[API]', payload.api],
+      ['[OLLAMA]', payload.ollama],
+      ['[A2A]', payload.a2a],
+      ['[RAG]', payload.rag],
+      ['[ELECTRON]', payload.electron],
+    ];
+    const body = sections
+      .filter(([, lines]) => lines.length > 0)
+      .map(([label, lines]) => `${label}\n${(lines as string[]).join('\n')}`)
+      .join('\n\n---\n\n');
+    if (body) writeFileSync(outPath, body, 'utf-8');
+    return { path: outPath, error: null };
+  } catch (e) {
+    return { path: '', error: String(e) };
+  }
+});
+
+// Quit app (called after saving session logs)
+ipcMain.handle('app:quit', () => {
+  app.quit();
 });
 
 // IPC: check health (API, Ollama, Vite)

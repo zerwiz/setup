@@ -35,7 +35,7 @@ Want to collaborate? **[Join Discord](https://discord.com/invite/p74cGwrdPd)** �
 | Capability | What it means |
 |------------|---------------|
 | **One-line install** | Install Zed, Ollama, LM Studio, and other dev tools with a single command. No hunting for installers. |
-| **Chat with local LLMs** | Talk to models (Llama, Mistral, etc.) running on your machine via Ollama. Your data stays local. |
+| **Chat with local LLMs** | Talk to models (Llama, Mistral, etc.) via Ollama. Use official install for GPU; AMD Linux needs ROCm package. Your data stays local. |
 | **Memory** | The AI remembers things. Use `/remember` to add notes about yourself or your project. Those notes show up in later chats. |
 | **Behavior** | Use `/behavior` to tell the AI how to act—formal, casual, code-focused, etc. It follows those instructions. |
 | **Document drive** | Add PDFs, docs, or code files. The AI reads them and uses them as context when you chat. Great for project docs. |
@@ -82,6 +82,7 @@ Memory, behavior, and drive content are stored in `~/.config/ai-dev-suite/` and 
 |------|-------------|
 | [**RAG**](./ai-dev-suite/rag/) | Index docs, answer with Ollama, web research |
 | [**AI Dev Suite**](./ai-dev-suite/) | AI dev install scripts + interactive TUI, Electron app, API |
+| [**Debugger**](./debugger/) | Observer, A2A agent, Electron UI — diagnose chat failures, logs, health, fixes |
 
 ## AI Dev Suite — Quick start
 
@@ -96,16 +97,35 @@ From this directory:
 
 See [doc/ai-dev-suite/START.md](./doc/ai-dev-suite/START.md) for details.
 
+## Debugger — Observer & diagnose
+
+When the Suite Chat shows "(no response)", "terminated", or "Cannot reach API", use the debugger to see what’s happening:
+
+| Script / Tool | Purpose |
+|---------------|---------|
+| `./start-ai-dev-suite-and-debugger.sh` | **Suite + Debugger together** — chat, drive, and debug UI side by side |
+| `./start-ai-dev-suite-debugger.sh` | Debugger only: API + Ollama + Electron UI (status, logs, test chat, edit files) |
+| `./debugger/observer.sh` | Terminal observer: tails API/Ollama logs, health checks every 10s, test chat, LLM analysis |
+| `./debugger/start-a2a.sh` | A2A agent (port 41435) — enables "Get debug help" in Suite Chat |
+
+The **observer** tails `/tmp/ai-dev-suite-api.log` and `/tmp/ollama.log`, reports API/Ollama/Vite health every 10s, runs a test chat to `/api/chat/stream`, and can analyze output with qwen2.5-coder (override with `DEBUG_MODEL`). The debugger Electron UI embeds the same observer plus status cards, log viewer, test chat, and file editing. See [doc/ai-dev-suite/DEBUGGER.md](./doc/ai-dev-suite/DEBUGGER.md).
+
 ## Install via curl
 
 Tools are hosted in [zerwiz/setup](https://github.com/zerwiz/setup):
 
 ```bash
-# AI Dev Suite – full install
+# AI Dev Suite – full install (Electron, TUI, API, Debugger)
 curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/ai-dev-suite/install-full.sh | bash
 
 # AI Dev Suite – display install commands
 curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/ai-dev-suite/install.sh | bash
+
+# Debugger (quick run – diagnose "(no response)", logs, fix suggestions)
+curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/run-debugger.sh | bash
+
+# Observer (terminal – tails API + Ollama logs)
+curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/run-observer.sh | bash
 
 # Workshop Setup (curl, Node, Git)
 curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/setup.sh | bash
@@ -117,7 +137,7 @@ curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/setup.sh | bash
 |------|---------|
 | [doc/](./doc/) | Overview and index |
 | [doc/ai-dev-suite/rag/](./doc/ai-dev-suite/rag/) | RAG setup, usage, options |
-| [doc/ai-dev-suite/](./doc/ai-dev-suite/) | AI Dev Suite: START, FUNCTIONS, STORAGE, PLANNING |
+| [doc/ai-dev-suite/](./doc/ai-dev-suite/) | AI Dev Suite: START, DEBUGGER, OLLAMA_GPU, FUNCTIONS, STORAGE, PLANNING |
 
 ## Structure
 
@@ -125,6 +145,7 @@ curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/setup.sh | bash
 setup/                   # zerwiz/setup – tools repo (this repo)
 ├── ai-dev-suite/       # Install, TUI, Electron app, ACP adapter (canonical source)
 ├── ai-dev-suite/rag/   # RAG script and deps
+├── debugger/           # Observer, A2A adapter, Electron UI (diagnose chat failures)
 ├── doc/                # All tool documentation
 ├── rules/              # Deployment, GitHub, conventions
 ├── scripts/            # Automation scripts

@@ -3,6 +3,8 @@
 interface Window {
   debugApi?: {
     readLog: (name: 'api' | 'ollama' | 'a2a' | 'rag' | 'electron') => Promise<{ lines: string[]; error: string | null }>;
+    saveSessionLogs: (payload: { api: string[]; ollama: string[]; a2a: string[]; rag: string[]; electron: string[] }) => Promise<{ path: string; error: string | null }>;
+    quitApp: () => Promise<void>;
     getHealth: () => Promise<{ api: string; ollama: string; vite: string }>;
     runTestChat: () => Promise<{ ok: boolean; output: string; error: string | null }>;
     runAnalysis: (payload: { context: string; model?: string | null }) => Promise<{ ok: boolean; text: string; error: string | null }>;

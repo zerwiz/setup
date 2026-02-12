@@ -9,7 +9,7 @@ Works on **macOS, Linux, and Windows** (with Git Bash or WSL). Install location 
 | Requirement | Purpose |
 |-------------|---------|
 | **localhost:41434** | The Elixir API listens here. The app (Electron, Vite, browser) connects to it. Start the API first or let the Electron app spawn it. |
-| **Ollama** (optional) | For Chat: runs models locally. Start with `ollama serve` or use Start Ollama in the app. |
+| **Ollama** (optional) | For Chat: runs models locally. Use [official install](https://ollama.com/install.sh) for GPU; AMD Linux needs ROCm package ([OLLAMA_GPU.md](./OLLAMA_GPU.md)). Start with `ollama serve` or use Start Ollama in the app. |
 | **Python 3** + pip | For RAG/web research (Internet mode). Installs `duckduckgo-search`, `requests`, `trafilatura` on startup. |
 | **Jina API key** (optional) | For higher rate limits when fetching URLs in Internet mode. Set `JINA_API_KEY` when starting the API (e.g. `JINA_API_KEY=your_key ./start-ai-dev-suite-api.sh`). Get a key at [jina.ai](https://jina.ai/). |
 
@@ -87,6 +87,7 @@ If you have zerwiz/setup cloned:
 | `./start-ai-dev-suite-api.sh` | API only → http://localhost:41434 |
 | `./start-ai-dev-suite-web.sh` | API + Vite → http://localhost:5174 |
 | `./start-ai-dev-suite-electron.sh` | Electron desktop app |
+| `./start-ai-dev-suite-and-debugger.sh` | Suite + Debugger together (both UIs) |
 | `./start-ai-dev-suite-tui.sh` | TUI (terminal menu) |
 | `./start-ai-dev-suite-acp.sh` | ACP adapter (stdio, for Zed/OpenCode) |
 
