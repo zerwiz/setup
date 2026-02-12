@@ -21,4 +21,4 @@ pip install duckduckgo-search requests trafilatura
 ```
 Then: `python rag.py research "query" --context-only` — fetches URLs in the query directly and outputs raw context.
 
-**Full documentation:** [tools/doc/rag/](../doc/rag/)
+**Full documentation:** [doc/rag/](../doc/rag/)

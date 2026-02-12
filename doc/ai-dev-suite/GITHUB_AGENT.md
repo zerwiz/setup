@@ -51,7 +51,7 @@ The agent would fetch, index, or query repository contents and use them as conte
 
 - [GitHub Assistant (Elasticsearch + LlamaIndex)](https://www.elastic.co/search-labs/blog/github-rag-elasticsearch) – clones repo, chunks with CodeSplitter, embeds with text-embedding-3-large
 - [RepoSearchRAG](https://github.com/MarkoKolarski/RepoSearchRAG) – LLM listwise reranker for GitHub code
-- Existing `tools/rag`: hybrid BM25+vector, reranker, incremental index – could be extended for GitHub sources
+- Existing `rag`: hybrid BM25+vector, reranker, incremental index – could be extended for GitHub sources
 
 **Pros:** Semantic search; handles “find code like X”; works with existing RAG pipeline; good for large codebases.
 
@@ -132,7 +132,7 @@ The agent would fetch, index, or query repository contents and use them as conte
 
 ### 4. Integration with Chat
 
-- **RAG path:** Add GitHub-fetched content to `tools/rag` index or to Drive KB
+- **RAG path:** Add GitHub-fetched content to `rag` index or to Drive KB
 - **Context path:** Fetch on demand, prepend to system/user message for chat
 - Existing `knowledge_bases` and `drive` logic can be extended to support “GitHub source”
 

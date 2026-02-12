@@ -6,7 +6,7 @@ Interactive Elixir app for installing AI dev tools. Run from the terminal and se
 
 **macOS / Linux:**
 ```bash
-cd tools/ai-dev-suite/elixir_tui
+cd ai-dev-suite/elixir_tui
 ./start.sh
 ```
 

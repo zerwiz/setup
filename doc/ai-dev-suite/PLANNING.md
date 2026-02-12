@@ -84,7 +84,7 @@ Standalone terminal tool for AI development resources. Delivered via `curl | bas
 
 | Feature | Status |
 |---------|--------|
-| `/research <query>` | ✅ Calls tools/rag research |
+| `/research <query>` | ✅ Calls rag research |
 | Fallback: rag in PATH or python3 script | ✅ |
 | Model suggests /research when asked for web lookup | ✅ |
 
@@ -94,7 +94,7 @@ Standalone terminal tool for AI development resources. Delivered via `curl | bas
 
 ### Delivery
 
-- **Bash script:** `install.sh` – display or install (push to zerwiz/setup)
+- **Bash script:** `install.sh` – display or install (in zerwiz/setup)
 - **Elixir TUI:** `elixir_tui/` – interactive; start scripts install Elixir if needed
 - **Workshop Setup:** Installs TUI to `~/bin/ai-dev-suite` via zerwiz/setup
 
@@ -110,14 +110,14 @@ Standalone terminal tool for AI development resources. Delivered via `curl | bas
 ### File Layout
 
 ```
-tools/ai-dev-suite/
+ai-dev-suite/
 ├── install.sh           # Bash: display/install
 ├── elixir_tui/
 │   ├── lib/ai_dev_suite_tui.ex
 │   ├── lib/ai_dev_suite_tui/cli.ex
 │   ├── start.sh, start.ps1, start.bat
 │   └── mix.exs
-└── doc/                 # tools/doc/ai-dev-suite/
+└── doc/                 # doc/ai-dev-suite/
     ├── README.md
     ├── FUNCTIONS.md
     ├── STORAGE.md
@@ -128,19 +128,19 @@ tools/ai-dev-suite/
 
 ## Checklist (All Done)
 
-- [x] Create `tools/ai-dev-suite/install.sh`
-- [x] Push to zerwiz/setup; front page curl blocks
+- [x] Create `ai-dev-suite/install.sh`
+- [x] In zerwiz/setup; front page curl blocks
 - [x] Add AI Dev Suite terminal block to front page
-- [x] Add `tools/ai-dev-suite/README.md`
+- [x] Add `ai-dev-suite/README.md`
 - [x] Elixir TUI with interactive menu
 - [x] Ollama: start, list, pull, chat
 - [x] Model picker with download option [0]
 - [x] RAG memory (memory.md, conversation_memory.md, behavior.md)
 - [x] Model tagging in memory; /memory models
 - [x] Document drive (/drive add, PDF/DOCX conversion)
-- [x] Web research (/research via tools/rag)
+- [x] Web research (/research via rag)
 - [x] /bye as exit command
-- [x] Documentation in tools/doc/ai-dev-suite/
+- [x] Documentation in doc/ai-dev-suite/
 
 ---
 

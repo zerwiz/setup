@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Start AI Dev Suite ACP adapter (stdio – for Zed/OpenCode)
-# Run from tools/ or repo root. Requires: npm run build in acp-adapter/
+# Run from repo root. Requires: npm run build in acp-adapter/
 
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

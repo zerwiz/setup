@@ -145,7 +145,7 @@ The API builds the system prompt from memory, behavior, and knowledge bases. The
 ### Project structure
 
 ```
-tools/ai-dev-suite/
+ai-dev-suite/
 ├── acp-adapter/                 # NEW: ACP adapter
 │   ├── package.json
 │   ├── tsconfig.json
@@ -189,9 +189,9 @@ Once the adapter is built, add to **`~/.config/zed/settings.json`** (create the 
 ```
 
 **Paths by install method:**
-- **From repo:** `tools/ai-dev-suite/acp-adapter/dist/index.js` (use absolute path)
+- **From repo:** `ai-dev-suite/acp-adapter/dist/index.js` (use absolute path)
 - **From install-full.sh:** `~/.local/share/ai-dev-suite/acp-adapter/dist/index.js` (or `$XDG_DATA_HOME/ai-dev-suite/acp-adapter/dist/index.js`)
-- **From tools/:** `./start-ai-dev-suite-acp.sh` runs the adapter (stdio)
+- **From repo root:** `./start-ai-dev-suite-acp.sh` runs the adapter (stdio)
 
 Or if you add a CLI wrapper (e.g. `ai-dev-suite-acp` in PATH):
 
@@ -255,8 +255,8 @@ Or with a launcher in PATH: `"command": "ai-dev-suite-acp"`, `"args": []`.
 ### Step 1: Create the adapter project
 
 ```bash
-mkdir -p tools/ai-dev-suite/acp-adapter/src
-cd tools/ai-dev-suite/acp-adapter
+mkdir -p ai-dev-suite/acp-adapter/src
+cd ai-dev-suite/acp-adapter
 npm init -y
 npm install @agentclientprotocol/sdk
 npm install -D typescript @types/node
@@ -341,13 +341,13 @@ A first version can omit tool calls and only handle text chat. Later, the adapte
 
 ## 12. Checklist for implementation
 
-- [ ] Create `tools/ai-dev-suite/acp-adapter/` with package.json and TypeScript
+- [ ] Create `ai-dev-suite/acp-adapter/` with package.json and TypeScript
 - [ ] Implement stdio JSON-RPC transport
 - [ ] Implement `initialize` handler
 - [ ] Implement session setup handler
 - [ ] Implement `session/prompt` handler → HTTP to `/api/chat/stream`
 - [ ] Map streaming response to `session/update` (agent_message_chunk)
-- [ ] Add `ai-dev-suite-acp` launcher script (e.g. in `tools/`) that runs `node acp-adapter/dist/index.js`
+- [ ] Add `ai-dev-suite-acp` launcher script (e.g. in repo root) that runs `node acp-adapter/dist/index.js`
 - [ ] Document Zed config in START.md and this doc
 - [ ] Document OpenCode config (when available)
 - [ ] Update doc/ai-dev-suite/README.md with ACP integration
@@ -355,4 +355,4 @@ A first version can omit tool calls and only handle text chat. Later, the adapte
 
 ---
 
-*WhyNot Productions · whynotproductions.netlify.app · tools/doc/ai-dev-suite/*
+*WhyNot Productions · whynotproductions.netlify.app · doc/ai-dev-suite/*

@@ -23,9 +23,9 @@ Hello! This is your guide to the terminal tools and utilities from [WhyNot Produ
 ### Quick start commands
 
 ```bash
-# RAG
-python tools/rag/rag.py index <files>
-python tools/rag/rag.py query "<question>"
+# RAG (from repo root)
+python rag/rag.py index <files>
+python rag/rag.py query "<question>"
 
 # AI Dev Suite (full install: API, Web, TUI, Electron)
 curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/ai-dev-suite/install-full.sh | bash
@@ -58,7 +58,7 @@ curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/setup.sh | bash
 | Doc | Description |
 |-----|-------------|
 | [README](./ai-dev-suite/README.md) | Install script, Elixir TUI, Electron desktop app |
-| [Start](./ai-dev-suite/START.md) | Start commands: API, web UI, Electron, TUI (scripts in `tools/`) |
+| [Start](./ai-dev-suite/START.md) | Start commands: API, web UI, Electron, TUI (scripts in repo root) |
 | [Functions](./ai-dev-suite/FUNCTIONS.md) | Full command/module reference (chat, drive, memory, research) |
 | [Storage](./ai-dev-suite/STORAGE.md) | Where memory, drive, and RAG data are stored |
 | [llama.cpp](./ai-dev-suite/LLAMACPP.md) | llama.cpp vs Ollama; Server screen placeholder |
@@ -71,11 +71,11 @@ curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/setup.sh | bash
 
 ## Adding a new tool
 
-1. Create `tools/<name>/` with `install.sh` and `README.md`
-2. Add to `docs/for-zerwiz-setup/` (full program for zerwiz/setup)
-3. Add terminal block on the front page
-4. Push to zerwiz/setup (see `docs/for-zerwiz-setup/PUSH_TO_SETUP.md`)
-5. Add doc to `tools/doc/<name>/`
+1. Create `<name>/` with `install.sh` and `README.md` (at repo root)
+2. Add to `for-zerwiz-setup/` if it should be synced to the homepage
+3. Add terminal block on the homepage front page (in WhyNotProductionsHomepage)
+4. Add doc to `doc/<name>/`
+5. Push to zerwiz/setup; run `./scripts/sync-to-homepage.sh` if you updated `for-zerwiz-setup/`
 
 ---
 

@@ -1,5 +1,9 @@
 # WhyNot Productions Tools
 
+**Collaborate with me to make this system better.** It's alpha for now — lots of bugs and lots to do. Your feedback and contributions are welcome.
+
+---
+
 ## About me
 
 I'm **Zerwiz** — Lars-Josef Lindbom. Developer. AI educator. Producer.
@@ -115,17 +119,21 @@ curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/setup.sh | bash
 ## Structure
 
 ```
-tools/
-├── ai-dev-suite/        # Install, TUI, Electron app
-├── rag/                 # RAG script and deps
-├── doc/                 # All tool documentation
-├── rules/               # Deployment, GitHub, conventions
-└── start-*.sh           # Launch scripts
+setup/                   # zerwiz/setup – tools repo (this repo)
+├── ai-dev-suite/       # Install, TUI, Electron app, ACP adapter
+├── rag/                # RAG script and deps
+├── doc/                # All tool documentation
+├── rules/              # Deployment, GitHub, conventions
+├── for-zerwiz-setup/   # Subset synced to homepage
+├── scripts/            # sync-to-homepage.sh
+└── start-*.sh          # Launch scripts
 ```
+
+See [doc/STRUCTURE.md](./doc/STRUCTURE.md) for details.
 
 ## Develop tools
 
-**zerwiz/setup is the main repo for tools.** Clone it and work there:
+**zerwiz/setup is the main repo for tools.** Clone it and work here:
 
 ```bash
 git clone https://github.com/zerwiz/setup.git

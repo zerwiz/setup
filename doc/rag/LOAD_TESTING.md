@@ -14,7 +14,7 @@ Establish a performance baseline and verify behavior under load.
 
 ## Load Test Script
 
-Run from `tools/rag`:
+Run from `rag`:
 
 ```bash
 ./scripts/load-test.sh [concurrency] [queries] [query]
@@ -26,7 +26,7 @@ Run from `tools/rag`:
 
 **Example:**
 ```bash
-cd tools/rag
+cd rag
 ./scripts/load-test.sh 5 20 "What is RAG in machine learning?"
 ```
 

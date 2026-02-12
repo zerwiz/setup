@@ -15,7 +15,7 @@ Index your documents (PDF, DOCX, TXT, MD) and answer questions using Ollama. Use
 ## Setup
 
 ```bash
-cd tools/rag
+cd rag
 pip install -r requirements.txt   # or: python3 -m pip install -r requirements.txt
 ollama pull nomic-embed-text       # or: ollama pull all-minilm
 ollama serve                      # if not already running

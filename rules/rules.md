@@ -23,7 +23,7 @@
 - **Per-tool README:** Each `<name>/` dir keeps a brief README pointing to `doc/<name>/`.
 - **When changing a tool:** Update the relevant doc. Add docs (e.g. STORAGE.md, FUNCTIONS.md) when adding features.
 
-### AI Dev Suite docs (tools/doc/ai-dev-suite/)
+### AI Dev Suite docs (doc/ai-dev-suite/)
 
 | Doc | Purpose |
 |-----|---------|

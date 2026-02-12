@@ -146,7 +146,7 @@ defmodule AiDevSuiteTui do
     IO.puts("  #{@dim}/remember <text>#{@reset}  – Add a manual note to memory.md.")
     IO.puts("  #{@dim}/behavior#{@reset}       – Show or add behavior instructions (behavior.md).")
     IO.puts("  #{@dim}/drive#{@reset}          – List documents in drive. /drive add <path> to add files/folders.")
-    IO.puts("  #{@dim}/research <query>#{@reset} – Web search + AI answer (requires tools/rag with duckduckgo-search).")
+    IO.puts("  #{@dim}/research <query>#{@reset} – Web search + AI answer (requires RAG or set AI_DEV_SUITE_RAG_SCRIPT).")
     IO.puts("  #{@dim}/bye#{@reset}             – Exit and auto-save conversation facts.")
     IO.puts("")
     drive_loaded = drive_index != ""
@@ -1064,31 +1064,65 @@ defmodule AiDevSuiteTui do
   end
 
   defp run_research(query) do
-    cwd = File.cwd!()
-    env_path = System.get_env("AI_DEV_SUITE_RAG_SCRIPT")
-    rag_candidates = if env_path && File.exists?(env_path) do
-      [env_path]
-    else
-      [
-        Path.expand(Path.join([cwd, "..", "..", "rag", "rag.py"])),
-        Path.expand(Path.join([cwd, "..", "..", "..", "tools", "rag", "rag.py"])),
-        Path.expand(Path.join([cwd, "tools", "rag", "rag.py"])),
-        Path.expand(Path.join([cwd, "rag", "rag.py"]))
-      ]
-    end
     # --context-only: skip Ollama in rag script; we inject raw context into chat
     args = ["research", query, "--context-only"]
     if exec = System.find_executable("rag") do
       {output, code} = System.cmd(exec, args, stderr_to_stdout: true)
       if code == 0, do: {:ok, output}, else: {:error, output}
     else
-      case Enum.find(rag_candidates, &File.exists?/1) do
+      case find_rag_script() do
         nil ->
-          {:error, "RAG script not found. Install: cd tools/rag && pip install -r requirements.txt"}
+          {:error, "RAG script not found. Set AI_DEV_SUITE_RAG_SCRIPT or install: pip install duckduckgo-search trafilatura"}
         script ->
           {output, code} = System.cmd(System.find_executable("python3") || "python", ["-u", script | args], stderr_to_stdout: true)
           if code == 0, do: {:ok, output}, else: {:error, output}
       end
+    end
+  end
+
+  @doc """
+  Find rag.py in a structure-agnostic way. Checks, in order:
+  1. AI_DEV_SUITE_RAG_SCRIPT env var (absolute path)
+  2. Walk up from cwd looking for rag/rag.py or rag.py in any ancestor directory
+
+  Returns the script path or nil.
+  """
+  def find_rag_script do
+    case System.get_env("AI_DEV_SUITE_RAG_SCRIPT") do
+      path when is_binary(path) and path != "" ->
+        expanded = Path.expand(String.trim(path))
+        if File.exists?(expanded) and File.regular?(expanded), do: expanded, else: nil
+      _ ->
+        walk_up_find_rag(Path.expand(File.cwd!()))
+    end
+  end
+
+  defp walk_up_find_rag(dir) do
+    candidates = [
+      Path.join([dir, "rag", "rag.py"]),
+      Path.join(dir, "rag.py")
+    ]
+    case Enum.find(candidates, &(File.exists?(&1) and File.regular?(&1))) do
+      nil ->
+        parent = Path.dirname(dir)
+        if parent == dir, do: nil, else: walk_up_find_rag(parent)
+      found ->
+        found
+    end
+  end
+
+  @doc """
+  Find rag requirements.txt (for pip install). Uses same discovery as find_rag_script:
+  if rag.py is in rag/, requirements is rag/requirements.txt.
+  Returns path or nil.
+  """
+  def find_rag_requirements do
+    case find_rag_script() do
+      nil -> nil
+      script_path ->
+        dir = Path.dirname(script_path)
+        req = Path.join(dir, "requirements.txt")
+        if File.exists?(req), do: req, else: nil
     end
   end
 
@@ -1177,7 +1211,7 @@ defmodule AiDevSuiteTui do
                   IO.puts(output)
                 {:error, reason} ->
                   IO.puts("Research failed: #{reason}")
-                  IO.puts("Install: cd tools/rag && pip install -r requirements.txt && ollama serve")
+                  IO.puts("Install: pip install duckduckgo-search trafilatura; or set AI_DEV_SUITE_RAG_SCRIPT")
                 end
             end
             IO.puts("")

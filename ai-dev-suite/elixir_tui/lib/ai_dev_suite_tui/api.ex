@@ -19,12 +19,7 @@ defmodule AiDevSuiteTui.API do
   end
 
   defp ensure_rag_deps do
-    cwd = File.cwd!()
-    req_candidates = [
-      Path.expand(Path.join([cwd, "..", "..", "rag", "requirements.txt"])),
-      Path.expand(Path.join([cwd, "..", "..", "..", "tools", "rag", "requirements.txt"]))
-    ]
-    case Enum.find(req_candidates, &File.exists?/1) do
+    case AiDevSuiteTui.find_rag_requirements() do
       nil -> :ok
       req ->
         python = System.find_executable("python3") || System.find_executable("python")

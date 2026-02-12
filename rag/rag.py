@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-RAG – Full implementation per tools/doc/rag/RAG_BEST_PRACTICES.md.
+RAG – Full implementation per doc/rag/RAG_BEST_PRACTICES.md.
 Phases 1–5: MVP, retrieval, prompt, evaluation, production.
 """
 import hashlib

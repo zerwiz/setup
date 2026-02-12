@@ -8,4 +8,4 @@ mix run -e "AiDevSuiteTui.API.start()"
 ```
 Runs the API at http://localhost:41434. Configure port in `config/config.exs` (`:api_port`).
 
-**Full documentation:** [tools/doc/ai-dev-suite/](../../doc/ai-dev-suite/)
+**Full documentation:** [doc/ai-dev-suite/](../../doc/ai-dev-suite/)

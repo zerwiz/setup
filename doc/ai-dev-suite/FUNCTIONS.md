@@ -78,7 +78,7 @@ Supported in `options` for `/api/chat` and `/api/chat/stream`: `temperature`, `n
 | `/behavior <text>` | — | Append behavior instruction |
 | `/drive` | `/dive` | List documents in drive |
 | `/drive add <path>` | — | Copy file or folder to drive and convert for AI |
-| `/research <query>` | `/search`, `/reserch`, `/serach` | Web search + AI answer (calls `tools/rag` if available) |
+| `/research <query>` | `/search`, `/reserch`, `/serach` | Web search + AI answer (calls `rag` if available) |
 | `/bye` | `bye`, `exit`, `quit` | Exit; auto-extract and save conversation facts |
 
 ---
@@ -134,12 +134,12 @@ model: llama3.2
 |----------|--------------|
 | **Internet button** (Chat) | Toggle ON before sending → fetches URLs in your message and injects web context. AI will say if it could reach the internet or not. |
 | `/research <query>` | Calls `rag research "query"` (Python RAG tool) |
-| **Fallback** | Tries `rag` in PATH; else `python3 tools/rag/rag.py research ...` |
+| **Fallback** | Tries `rag` in PATH; else discovers `rag.py` via `AI_DEV_SUITE_RAG_SCRIPT` or walk-up search |
 | **Direct URLs** | URLs in your message (e.g. `https://example.com`) are fetched directly, not just searched |
 | **System hint** | Model suggests `/research <query>` when user asks for web lookup |
 | **Context-only** | RAG runs with `--context-only` so raw web context is injected; no double Ollama call |
 
-**Requires:** `tools/rag` with `duckduckgo-search`, `requests`, `trafilatura`. ChromaDB optional for web-only.
+**Requires:** RAG script (`rag` in PATH, or `AI_DEV_SUITE_RAG_SCRIPT`, or `rag.py` found by walking up from cwd). Deps: `duckduckgo-search`, `requests`, `trafilatura`. ChromaDB optional for web-only.
 
 **Jina API key (optional):** For higher rate limits when fetching URLs, set `JINA_API_KEY` when starting the API (e.g. `JINA_API_KEY=your_key ./start-ai-dev-suite-api.sh`). Get a key at [jina.ai](https://jina.ai/).
 
@@ -378,7 +378,7 @@ Base URL: `http://localhost:41434`. CORS enabled. All JSON.
 ## 15. File Layout
 
 ```
-tools/ai-dev-suite/
+ai-dev-suite/
 ├── install.sh           # Bash: display/install commands
 ├── elixir_tui/
 │   ├── lib/
@@ -397,7 +397,7 @@ tools/ai-dev-suite/
 │   └── ...
 └── ...
 
-Documentation: tools/doc/ai-dev-suite/
+Documentation: doc/ai-dev-suite/
 ```
 
 ---

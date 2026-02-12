@@ -1,0 +1,28 @@
+---
+description: AI Dev Suite – structure-agnostic path discovery. No hardcoded folder layout.
+globs: ["ai-dev-suite/**/*"]
+alwaysApply: false
+---
+
+# AI Dev Suite – Structure-Agnostic Paths
+
+The AI Dev Suite must work regardless of file and folder structure. Users may move files, use different layouts, or run from different directories. **Never assume a fixed folder hierarchy.**
+
+## Rules
+
+1. **Config dir** – Use `AI_DEV_SUITE_CONFIG_DIR` env override; default `~/.config/ai-dev-suite`. Never hardcode config paths.
+
+2. **RAG script** – Discover dynamically:
+   - First: `AI_DEV_SUITE_RAG_SCRIPT` env (absolute path)
+   - Else: `rag` in PATH
+   - Else: walk up from `File.cwd!()` and check `rag/rag.py` or `rag.py` in each ancestor dir
+
+3. **Requirements.txt** – Derive from RAG script path (same dir), or use the same discovery. No hardcoded `tools/rag` or `../rag` paths.
+
+4. **Error messages** – Do not say "cd rag" or "cd tools/rag". Say: `Set AI_DEV_SUITE_RAG_SCRIPT` or `pip install duckduckgo-search trafilatura`.
+
+## When adding or changing path logic
+
+- Prefer env vars over relative paths
+- Use walk-up search instead of fixed `../` chains
+- Test from different cwds (e.g. repo root, elixir_tui, installed location)

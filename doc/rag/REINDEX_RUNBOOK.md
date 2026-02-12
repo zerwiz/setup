@@ -2,7 +2,7 @@
 
 Procedure for batch reindexing the RAG index without taking queries offline.
 
-**Audience:** Operators running `tools/rag/rag.py` with ChromaDB.
+**Audience:** Operators running `rag/rag.py` with ChromaDB.
 
 **Use when:** You need to reindex all documents (new chunk strategy, embedding model, or bulk content changes) while keeping the current index available for queries until the new one is ready.
 
@@ -39,7 +39,7 @@ STAGING_DIR=~/.config/ai-dev-suite/rag_index_staging
 mkdir -p "$STAGING_DIR"
 
 # Index all documents into staging (not the live index)
-python tools/rag/rag.py index \
+python rag/rag.py index \
   /path/to/doc1.pdf \
   /path/to/doc2.docx \
   /path/to/docs_dir/ \
@@ -49,20 +49,20 @@ python tools/rag/rag.py index \
 For incremental runs on a large corpus, add `--incremental` so only changed files are re-embedded:
 
 ```bash
-python tools/rag/rag.py index /path/to/docs/ --index-dir "$STAGING_DIR" --incremental
+python rag/rag.py index /path/to/docs/ --index-dir "$STAGING_DIR" --incremental
 ```
 
 ### Step 2: Validate the staging index
 
 ```bash
 # Quick query to confirm the index works
-python tools/rag/rag.py query "test query" --index-dir "$STAGING_DIR"
+python rag/rag.py query "test query" --index-dir "$STAGING_DIR"
 ```
 
 Check that results and citations look correct. Run `eval` if you have a test set:
 
 ```bash
-python tools/rag/rag.py eval --index-dir "$STAGING_DIR" --eval-file eval.jsonl
+python rag/rag.py eval --index-dir "$STAGING_DIR" --eval-file eval.jsonl
 ```
 
 ### Step 3: Swap live and staging (atomic replace)
@@ -94,7 +94,7 @@ rm -rf ~/.config/ai-dev-suite/rag_index.bak
 If a full rebuild is not needed, use incremental indexing against the live index:
 
 ```bash
-python tools/rag/rag.py index /path/to/docs/ --incremental
+python rag/rag.py index /path/to/docs/ --incremental
 ```
 
 This updates only changed files. Deleted files remain in the index until a full reindex.
@@ -130,5 +130,5 @@ mv "$BACKUP_DIR" "$INDEX_DIR"
 ## See also
 
 - [RAG_BEST_PRACTICES.md](./RAG_BEST_PRACTICES.md) – Production considerations
-- [tools/rag/rag.py](../../rag/rag.py) – Implementation
-- [tools/rag/README.md](../../rag/README.md) – Quick start
+- [rag/rag.py](../../rag/rag.py) – Implementation
+- [rag/README.md](../../rag/README.md) – Quick start

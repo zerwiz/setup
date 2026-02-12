@@ -158,7 +158,7 @@ Important:
 
 ## 5. Where to document after you integrate
 
-- **Repo:** Add a short note in `systems/frontend/README.md` (e.g. "Chat widget: see `tools/doc/AI_CHATBOT_INTEGRATION.md`. Env: …").
+- **Repo:** Add a short note in `systems/frontend/README.md` (e.g. "Chat widget: see `doc/AI_CHATBOT_INTEGRATION.md`. Env: …").
 - **Changelog:** In `docs/Project Management/CHANGELOG.md` add an entry when you add or change the chatbot (e.g. "Add AI chat widget (Crisp)" or "Add custom chat + Netlify Function for OpenAI").
 
 ---

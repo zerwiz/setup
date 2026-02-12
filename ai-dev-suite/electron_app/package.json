@@ -4,7 +4,7 @@
   "description": "Zerwiz AI Dev Suite – Desktop app for tools, chat, memory, drive",
   "main": "dist/main/main.js",
   "author": "WhyNot Productions <dev@whynotproductions.net>",
-  "repository": "https://github.com/zerwiz/WhyNotProductionsHomepage",
+  "repository": "https://github.com/zerwiz/setup",
   "scripts": {
     "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
     "dev:vite": "vite",
@@ -51,7 +51,7 @@
     "publish": {
       "provider": "github",
       "owner": "zerwiz",
-      "repo": "WhyNotProductionsHomepage",
+      "repo": "setup",
       "vPrefixedTagName": true
     },
     "mac": {

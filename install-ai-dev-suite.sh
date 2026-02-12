@@ -10,7 +10,7 @@ set -e
 # Resolve HOME (Windows Git Bash / WSL: use USERPROFILE if HOME unset)
 [[ -z "$HOME" && -n "$USERPROFILE" ]] && export HOME="$USERPROFILE"
 
-REPO="${AI_DEV_SUITE_REPO:-https://github.com/zerwiz/WhyNotProductionsHomepage}"
+REPO="${AI_DEV_SUITE_REPO:-https://github.com/zerwiz/setup}"
 BRANCH="${AI_DEV_SUITE_BRANCH:-main}"
 
 # Install location: XDG_DATA_HOME on Linux, or override
@@ -63,9 +63,15 @@ trap 'rm -rf "$TMP"' EXIT
 
 cd "$TMP"
 curl -fsSL "${REPO}/archive/refs/heads/${BRANCH}.tar.gz" | tar xz
-cd "WhyNotProductionsHomepage-${BRANCH}"
+EXTRACT_DIR="$(find . -maxdepth 1 -type d -name '*-main' | head -1)"
+[[ -z "$EXTRACT_DIR" ]] && EXTRACT_DIR="setup-main"
+cd "$EXTRACT_DIR"
 
-if [[ ! -d tools/ai-dev-suite ]]; then
+# ai-dev-suite at root (setup) or in tools/ (legacy)
+AI_DEV_SUITE_SRC=""
+[[ -d "ai-dev-suite" ]] && AI_DEV_SUITE_SRC="ai-dev-suite"
+[[ -z "$AI_DEV_SUITE_SRC" && -d "tools/ai-dev-suite" ]] && AI_DEV_SUITE_SRC="tools/ai-dev-suite"
+if [[ -z "$AI_DEV_SUITE_SRC" ]] || [[ ! -d "$AI_DEV_SUITE_SRC" ]]; then
   echo -e "${RED}Unexpected repo structure. Aborting.${RESET}"
   exit 1
 fi
@@ -73,7 +79,7 @@ fi
 # Install to ~/.local/share/ai-dev-suite
 mkdir -p "$(dirname "$INSTALL_DIR")"
 rm -rf "$INSTALL_DIR"
-cp -r tools/ai-dev-suite "$INSTALL_DIR"
+cp -r "$AI_DEV_SUITE_SRC" "$INSTALL_DIR"
 
 echo -e "${DIM}Installing Elixir deps...${RESET}"
 (cd "$INSTALL_DIR/elixir_tui" && mix deps.get 2>/dev/null) || true

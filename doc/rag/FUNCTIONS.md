@@ -1,6 +1,6 @@
 # RAG – Functions Reference
 
-Complete reference of all functions and commands in the RAG system (`tools/rag/rag.py`).
+Complete reference of all functions and commands in the RAG system (`rag/rag.py`).
 
 ---
 
@@ -205,12 +205,12 @@ Also accepts: `q`, `expected_answer`. Writes to `eval_results.json` with `questi
 ## 15. File Layout
 
 ```
-tools/rag/
+rag/
 ├── rag.py           # Main script (index, query, research, eval)
 ├── requirements.txt # chromadb, pypdf, python-docx, requests, rank-bm25, duckduckgo-search, trafilatura
 └── README.md
 
-Documentation: tools/doc/rag/
+Documentation: doc/rag/
 ```
 
 ---

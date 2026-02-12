@@ -20,13 +20,13 @@ Action items consolidated from all docs: [FUNCTIONS](./ai-dev-suite/FUNCTIONS.md
 
 From [ZED_OPENCODE_ACP.md](./ai-dev-suite/ZED_OPENCODE_ACP.md) – connect AI Dev Suite to code IDEs via Agent Client Protocol:
 
-- [x] Create `tools/ai-dev-suite/acp-adapter/` with package.json and TypeScript
+- [x] Create `ai-dev-suite/acp-adapter/` with package.json and TypeScript
 - [x] Implement stdio JSON-RPC transport
 - [x] Implement `initialize` handler
 - [x] Implement session setup handler
 - [x] Implement `session/prompt` handler → HTTP to `/api/chat/stream`
 - [x] Map streaming response to `session/update` (agent_message_chunk)
-- [x] Add `ai-dev-suite-acp` launcher script (`tools/start-ai-dev-suite-acp.sh`)
+- [x] Add `ai-dev-suite-acp` launcher script (`start-ai-dev-suite-acp.sh`)
 - [x] Document Zed config in START.md and ZED_OPENCODE_ACP.md
 - [x] **Document OpenCode config** – ✅ Done. ZED_OPENCODE_ACP.md §7: status, expected config if OpenCode adds it, where to check, use Zed/JetBrains today.
 - [x] Update doc/ai-dev-suite/README.md with ACP integration
@@ -34,7 +34,7 @@ From [ZED_OPENCODE_ACP.md](./ai-dev-suite/ZED_OPENCODE_ACP.md) – connect AI De
 
 ### Low priority / Nice to have
 
-- [x] **Standalone desktop app** – See [UI_PLANNING.md](./ai-dev-suite/UI_PLANNING.md): Electron + React + Phoenix API. **Done:** `tools/ai-dev-suite/electron_app/` with Tools, Chat, Drive, Memory, Settings screens; Elixir API on port 41434.
+- [x] **Standalone desktop app** – See [UI_PLANNING.md](./ai-dev-suite/UI_PLANNING.md): Electron + React + Phoenix API. **Done:** `ai-dev-suite/electron_app/` with Tools, Chat, Drive, Memory, Settings screens; Elixir API on port 41434.
 - [x] **Drive: HTML support** – ✅ Done. Split at h1/h2/h3; each section gets `[section: Title]` metadata.
 - [x] **Drive: `[type: table]`** – ✅ Done. Detects markdown tables (2+ pipes/line) and CSV/TSV (consistent delimiter count); adds `[type: table]` to header. `.csv` files get `[type: table]` by extension.
 - [ ] **Drive: questions-answered** – LLM extracts "questions this excerpt can answer" per chunk to improve retrieval targeting.
@@ -60,7 +60,7 @@ From [ZED_OPENCODE_ACP.md](./ai-dev-suite/ZED_OPENCODE_ACP.md) – connect AI De
 
 ## RAG Tool
 
-**Current implementation:** `tools/rag/rag.py` – recursive chunking (512 chars), hybrid BM25+vector, RRF fusion, incremental index, basic eval, in-memory cache. See RAG Best Practices checklist below.
+**Current implementation:** `rag/rag.py` – recursive chunking (512 chars), hybrid BM25+vector, RRF fusion, incremental index, basic eval, in-memory cache. See RAG Best Practices checklist below.
 
 ### High priority
 
@@ -72,12 +72,12 @@ From [ZED_OPENCODE_ACP.md](./ai-dev-suite/ZED_OPENCODE_ACP.md) – connect AI De
 - [x] **Semantic chunking** – ✅ Done. `--chunk-strategy semantic` (paragraph-aware, token-based splits).
 - [x] **Query expansion** – ✅ Done. `--expand-query` uses LLM to generate alternatives; RRF across variants.
 - [x] **Eval: ARES/RAGTruth** – ✅ Done. `--eval-ares` writes ARES-compatible TSV for ares-ai integration.
-- [x] **Zero-downtime reindex runbook** – ✅ Done. `tools/doc/rag/REINDEX_RUNBOOK.md` – staging dir, swap, rollback.
+- [x] **Zero-downtime reindex runbook** – ✅ Done. `doc/rag/REINDEX_RUNBOOK.md` – staging dir, swap, rollback.
 
 ### Low priority / Production hardening
 
 - [x] **Rate limiting** – ✅ Done. Per-IP on `/api/research` via `RAG_RATE_LIMIT_PER_MIN` (Elixir RateLimitPlug).
-- [x] **Load and failure testing** – ✅ Done. `tools/rag/scripts/load-test.sh` + LOAD_TESTING.md.
+- [x] **Load and failure testing** – ✅ Done. `rag/scripts/load-test.sh` + LOAD_TESTING.md.
 - [x] **Redis caching** – ✅ Done. `RAG_REDIS_URL` enables Redis; falls back to in-memory.
 - [x] **Alerting** – ✅ Done. `RAG_ALERT_WEBHOOK` + `RAG_ALERT_LATENCY_MS` for latency/error alerts.
 

@@ -76,7 +76,7 @@ Add Phoenix to the existing Elixir project as an optional mode. The TUI remains 
 ## Project Structure
 
 ```
-tools/ai-dev-suite/
+ai-dev-suite/
 ├── elixir_tui/              # Existing – becomes shared lib
 │   ├── lib/
 │   │   ├── ai_dev_suite_tui.ex     # Core (unchanged)

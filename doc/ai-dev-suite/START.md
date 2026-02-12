@@ -47,7 +47,7 @@ Use the AI Dev Suite as an ACP agent in Zed or OpenCode. **Prerequisite:** API r
 
 **Build the adapter:**
 ```bash
-cd ~/.local/share/ai-dev-suite/acp-adapter   # or tools/ai-dev-suite/acp-adapter from repo
+cd ~/.local/share/ai-dev-suite/acp-adapter   # or ai-dev-suite/acp-adapter from repo
 npm install && npm run build
 ```
 
@@ -78,9 +78,9 @@ curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/run-tui.sh | bash
 
 ---
 
-## Scripts from repo (from `tools/`)
+## Scripts from repo
 
-If you have the WhyNotProductions Homepage repo cloned:
+If you have zerwiz/setup cloned:
 
 | Script | What it does |
 |--------|--------------|
@@ -104,13 +104,13 @@ cd ~/CodeP/WhyNotProductions\ Homepage/tools
 
 **Terminal 1 – API**
 ```bash
-cd ~/CodeP/WhyNotProductions\ Homepage/tools/ai-dev-suite/elixir_tui
+cd ~/CodeP/setup/ai-dev-suite/elixir_tui
 mix run -e "AiDevSuiteTui.API.start()"
 ```
 
 **Terminal 2 – React**
 ```bash
-cd ~/CodeP/WhyNotProductions\ Homepage/tools/ai-dev-suite/electron_app
+cd ~/CodeP/setup/ai-dev-suite/electron_app
 npm run dev:vite
 ```
 

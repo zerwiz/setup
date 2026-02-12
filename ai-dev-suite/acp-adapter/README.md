@@ -12,7 +12,7 @@ Connects **Zed** and **OpenCode** to the AI Dev Suite via the [Agent Client Prot
 ## Install & Build
 
 ```bash
-cd tools/ai-dev-suite/acp-adapter
+cd ai-dev-suite/acp-adapter
 npm install
 npm run build
 ```
@@ -40,7 +40,7 @@ Add to `~/.config/zed/settings.json`:
   "agent_servers": {
     "AI Dev Suite": {
       "command": "node",
-      "args": ["/absolute/path/to/tools/ai-dev-suite/acp-adapter/dist/index.js"]
+      "args": ["/absolute/path/to/ai-dev-suite/acp-adapter/dist/index.js"]
     }
   }
 }

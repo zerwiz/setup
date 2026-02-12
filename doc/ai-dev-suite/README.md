@@ -33,17 +33,15 @@ For an interactive menu to select what to install:
 
 Startup scripts install Elixir if needed. See [elixir-tui.md](./elixir-tui.md).
 
-## Push to zerwiz/setup
+## In zerwiz/setup
 
-1. Edit `install.sh` here
-2. Sync to `docs/for-zerwiz-setup/ai-dev-suite/`
-3. Follow `docs/for-zerwiz-setup/PUSH_TO_SETUP.md`
+Edit `ai-dev-suite/install.sh` here. To update the homepage copy, run `./scripts/sync-to-homepage.sh`; that copies `for-zerwiz-setup/` to WhyNotProductionsHomepage.
 
 ## Zed & OpenCode (ACP)
 
 Connect your code editor to the AI Dev Suite via the [Agent Client Protocol](https://agentclientprotocol.com). **Requires:** API at http://localhost:41434 (run Electron app or `ai-dev-suite-api` first).
 
-**Build:** `cd tools/ai-dev-suite/acp-adapter && npm install && npm run build`
+**Build:** `cd ai-dev-suite/acp-adapter && npm install && npm run build`
 
 **Zed:** Add to `~/.config/zed/settings.json`:
 ```json
@@ -54,7 +52,7 @@ Connect your code editor to the AI Dev Suite via the [Agent Client Protocol](htt
   }
 }
 ```
-Path: `tools/ai-dev-suite/acp-adapter/dist/index.js` (repo) or `~/.local/share/ai-dev-suite/acp-adapter/dist/index.js` (install-full). Then: Command Palette → `agent: new thread` → "AI Dev Suite".
+Path: `ai-dev-suite/acp-adapter/dist/index.js` (repo) or `~/.local/share/ai-dev-suite/acp-adapter/dist/index.js` (install-full). Then: Command Palette → `agent: new thread` → "AI Dev Suite".
 
 **OpenCode:** No published config yet for OpenCode as ACP client. See ZED_OPENCODE_ACP.md §7. Use Zed or JetBrains today.
 

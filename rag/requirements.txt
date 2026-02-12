@@ -1,4 +1,4 @@
-# RAG – full implementation (tools/doc/rag/RAG_BEST_PRACTICES.md)
+# RAG – full implementation (doc/rag/RAG_BEST_PRACTICES.md)
 chromadb>=0.4.0
 pypdf>=3.0.0
 python-docx>=1.0.0

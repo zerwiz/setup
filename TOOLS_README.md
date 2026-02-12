@@ -11,7 +11,7 @@ Standalone terminal tools from WhyNot Productions. Delivered via `curl | bash` f
 
 ## AI Dev Suite – Start scripts
 
-From this directory (`tools/`):
+From repo root:
 
 | Script | Purpose |
 |--------|---------|

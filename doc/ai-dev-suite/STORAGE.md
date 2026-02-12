@@ -120,3 +120,14 @@ The chat includes `memory.md` and `conversation_memory.md` in the system prompt.
 
 - **AI Dev Suite:** Use Settings → Config directory to change the base path. Restart to apply.
 - **RAG:** Use `--index-dir` to override the Chroma index path when indexing or querying.
+
+## Structure-agnostic path discovery
+
+The AI Dev Suite does **not** assume a fixed file or folder structure. It discovers paths dynamically:
+
+| What | How |
+|------|-----|
+| **Config dir** | `AI_DEV_SUITE_CONFIG_DIR` env, else `~/.config/ai-dev-suite` |
+| **RAG script** | 1) `AI_DEV_SUITE_RAG_SCRIPT` env (absolute path); 2) `rag` in PATH; 3) Walk up from cwd looking for `rag/rag.py` or `rag.py` in any ancestor dir |
+
+**RAG discovery:** If you move files or use a different layout, set `AI_DEV_SUITE_RAG_SCRIPT` to the full path of your `rag.py`. Otherwise the app walks up from the current working directory to find it. Works from any subdirectory of your project.

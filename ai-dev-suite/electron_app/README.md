@@ -3,7 +3,7 @@
 Hello and welcome to the **Zerwiz AI Dev Suite** desktop app. This is a standalone GUI for AI dev tools: install Zed, OpenCode, Ollama, LM Studio, OpenClaw, Workshop Setup; chat with Ollama; manage memory, drive, and knowledge bases. Uses the Elixir backend API and an Electron + React frontend. Styled with the WhyNot Productions look.
 
 - **Home page:** [whynotproductions.netlify.app](https://whynotproductions.netlify.app)
-- **Full documentation:** [tools/doc/ai-dev-suite/](../../doc/ai-dev-suite/)
+- **Full documentation:** [doc/ai-dev-suite/](../../doc/ai-dev-suite/)
 
 ## Header
 
@@ -52,7 +52,7 @@ Hello and welcome to the **Zerwiz AI Dev Suite** desktop app. This is a standalo
 
 1. Install dependencies: `npm install`
 2. Ensure the Elixir API can run: `cd ../elixir_tui && mix deps.get`
-3. Start the app: `npm run dev` (or `./start-ai-dev-suite-electron.sh` from `tools/`—installs RAG deps on startup)
+3. Start the app: `npm run dev` (or `./start-ai-dev-suite-electron.sh` from repo root—installs RAG deps on startup)
 
 This will:
 - Start the Vite dev server (React)
@@ -73,7 +73,7 @@ This will:
 ## Packaging & auto-updates
 
 - **Packaging:** `elixir_tui` is bundled as `extraResources`; the app spawns it on launch. Requires **Elixir** + **Mix** on the host.
-- **Auto-updates:** electron-updater checks GitHub Releases on startup (production builds only). Publish releases to `zerwiz/WhyNotProductionsHomepage` for updates to work.
+- **Auto-updates:** electron-updater checks GitHub Releases on startup (production builds only). Publish releases to `zerwiz/setup` for updates to work.
 
 ## Structure
 
@@ -94,7 +94,7 @@ electron_app/
 
 The app talks to the Elixir API at `http://localhost:41434`. Endpoints: `/api/tools`, `/api/chat`, `/api/bye`, `/api/memory`, `/api/drive`, etc.
 
-See `tools/doc/ai-dev-suite/UI_PLANNING.md` for full spec.
+See `doc/ai-dev-suite/UI_PLANNING.md` for full spec.
 
 ## Troubleshooting
 

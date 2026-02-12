@@ -67,7 +67,7 @@ curl -fsSL "${REPO}/archive/refs/heads/${BRANCH}.tar.gz" | tar xz
 EXTRACT_DIR="$(find . -maxdepth 1 -type d -name '*-main' | head -1)"
 [[ -z "$EXTRACT_DIR" ]] && EXTRACT_DIR="setup-main"
 cd "$EXTRACT_DIR"
-# ai-dev-suite at root (zerwiz/setup) or in tools/ (legacy)
+# ai-dev-suite can be at root or in tools/
 AI_DEV_SUITE_DIR=""
 [[ -d "ai-dev-suite" ]] && AI_DEV_SUITE_DIR="ai-dev-suite"
 [[ -z "$AI_DEV_SUITE_DIR" && -d "tools/ai-dev-suite" ]] && AI_DEV_SUITE_DIR="tools/ai-dev-suite"
