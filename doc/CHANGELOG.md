@@ -9,13 +9,29 @@ Format: list entries under a date/version heading; use present tense (“Add …
 
 ## [Unreleased]
 
+- Debugger: Info modal – Timeouts section, updated Observer/Chat/RAG descriptions.
+- Debugger: Observer Chat styled like Debugger Chat – model selector, bubbles, + memory, same placeholder.
+- Debugger: increase chat timeout to 5 min and analysis to 3 min; clearer timeout error messages.
+- Debugger: Observer has its own chat interface – messages + input, separate thread from Debugger Chat, same model. – input in Observer sends to same chat thread; scrolls to Chat panel to show response.
+- Debugger: start at top on load; Logs button scrolls to logs (no scroll on initial load).
+- Debugger: Observer logs use silent refresh (no Loading flash every 3s).
+- Debugger: RAG memory for both Observer and Chat – Chat injects past fixes into context; Chat assistant messages have + memory button; Observer links to memory; runAnalysis already used it.
+- Debugger: Observer ↔ debugger communication – Ask/→ Chat/Run check in Observer; results shown inline; Get fix suggestions updates Observer; → Chat pre-fills question; analysis fetches fresh logs.
+- Debugger: embed observer in UI – combined API+Ollama log view (auto-refresh 3s), status, Run check. No separate terminal.
+- start-ai-dev-suite-debugger.sh: remove observer spawn; A2A only with DEBUG=1.
+- Remove start-ai-dev-suite-debugger-ui.sh – use ./start-ai-dev-suite-debugger.sh only (full bootstrap).
+- Debugger: resizable panels – Processes/Terminals/Files, Past fixes, and Logs sections can be dragged vertically to change height (min 8rem, max 70vh).
+- Debugger: fix ↻ Refresh and Logs buttons – minimum 300ms loading feedback; Logs scrolls log panels into view; error logging on failure.
+- Move RAG: `rag/` → `ai-dev-suite/rag/`; `doc/rag/` → `doc/ai-dev-suite/rag/`; add `debugger/rag/` (README for suite rag.log + RAG-style memory). Update ensure-rag-deps.sh, Elixir find_rag_script (ai-dev-suite/rag/rag.py), and all doc/rules references.
 - Add doc/CURL_INSTALLS.md – all curl install commands for homepage; copy-paste ready; use zerwiz/setup URLs so visitors can install.
 - Remove homepage sync – delete sync script, HOMEPAGE_*.md, SYNC_TO_HOMEPAGE.md. This repo is AI Dev Suite tools only; homepage lives in a separate repo.
-- Debugger: read and write files – Edit file section (Choose file, Read, Write); path restricted to project root or ~/.config/ai-dev-suite; analysis/chat prompts mention file edits; user approves all changes.
+- Debugger: read and write files – Edit file section (Choose file, Read, Write); path restricted to project root or ~/.config/ai-dev-suite; analysis/chat/A2A prompts explicitly state "Allowed: project root, ~/.config/ai-dev-suite. Cannot write to /tmp"; user approves all changes.
 - Suite ↔ Debugger communication – Suite can ask debugger for fix suggestions; "Get debug help" / "Debug help" in Chat (error banner and (no response)); A2A adapter REST /api/analyze; Suite API proxy /api/debugger/ask; A2A starts with Suite so "Get debug help" works by default.
 - Debugger: read AI Suite logs and terminals – A2A, RAG, Electron/suite terminal; log selector dropdown (Ollama | A2A | RAG | Electron); all logs sent to analysis and chat; `start-ai-dev-suite-electron.sh` tees npm run dev output to `/tmp/ai-dev-suite-electron.log`.
 - Debugger start scripts: free port 5175 if in use before starting (fixes "Port 5175 is already in use").
-- Debugger: model selector – choose any installed Ollama model for chat and analysis; dropdown in header.
+- Debugger: Info button – modal explains what each feature does (Status, Logs, Chat, Ask, Run fix, Edit file, etc.).
+- Debugger: Download button – dropdown lists models from Suite API (or fallback); click to pull; shows ✓ for installed.
+- Debugger: model synced with Suite Chat – uses Suite's preferred_model from /api/preferences; same model for Chat, Ask, and Suite; dropdown in header and Chat panel; override until next refresh.
 - Debugger: fix model resolution – use actual model name from /api/tags, not preferred when only family matches (fixes 404 when qwen2.5-coder:3b not found but e.g. llama3.2 is installed).
 - Debugger: resolve Ollama model from /api/tags when default missing (fixes chat 404); add "Free port 11434" when bind error in log; allow fuser, lsof, kill in Run fix; better chat error messages.
 - Debugger Run fix: add "Choose file" button to select a script to run.
@@ -27,7 +43,7 @@ Format: list entries under a date/version heading; use present tense (“Add …
 - Debugger memory (RAG-style): stores every fix qwen2.5-coder suggests in `~/.config/ai-dev-suite/debugger_memory.md`; past fixes are injected into the analysis prompt so the model can reuse prior solutions; "Past fixes" panel in the UI.
 - Debug observer: uses qwen2.5-coder:3b to analyze output and suggest fixes; override with DEBUG_MODEL.
 - Add start-ai-dev-suite-debugger.sh – full debugger start (API + Ollama + UI); DEBUG=1 adds observer + A2A.
-- Add debugger Electron UI (electron-app/) – status, logs, test chat, qwen2.5-coder analysis. Run: ./start-ai-dev-suite-debugger-ui.sh
+- Add debugger Electron UI (electron-app/) – status, logs, test chat, qwen2.5-coder analysis. Run: ./start-ai-dev-suite-debugger.sh
 - Add doc/ai-dev-suite/DEBUGGER.md – full debugger documentation (observer, A2A, usage, troubleshooting).
 - Debugger: move to `debugger/` folder – `observer.sh`, `start-a2a.sh`, `a2a-adapter/`.
 - Debug observer: A2A (Google Agent2Agent) support – a2a-adapter exposes status/logs/analysis via A2A; DEBUG=1 starts it. Agent card: http://localhost:41435/.well-known/agent-card.json

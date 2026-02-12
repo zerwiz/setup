@@ -11,6 +11,9 @@ interface Window {
     getProcesses: () => Promise<{ header: string; all: string[]; terminals: string[]; relevant: string[]; error: string | null }>;
     getFiles: () => Promise<{ configDir: string; configFiles: string[]; logFiles: { path: string; size: number; mtime: string }[]; projectRoot: string; projectFiles: string[]; error: string | null }>;
     getOllamaModels: () => Promise<{ models: string[]; error: string | null }>;
+    getSuitePreferredModel: () => Promise<{ preferredModel: string | null; error: string | null }>;
+    getDownloadableModels: () => Promise<{ models: string[]; error: string | null }>;
+    pullModel: (name: string) => Promise<{ ok: boolean; output: string; error: string | null }>;
     startScript: (scriptId: 'api' | 'ollama') => Promise<{ ok: boolean; output: string; error: string | null }>;
     freePort: (port?: number) => Promise<{ ok: boolean; output: string; error: string | null }>;
     selectFile: () => Promise<{ path: string | null; error: string | null }>;

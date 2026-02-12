@@ -205,12 +205,12 @@ Also accepts: `q`, `expected_answer`. Writes to `eval_results.json` with `questi
 ## 15. File Layout
 
 ```
-rag/
+ai-dev-suite/rag/
 ├── rag.py           # Main script (index, query, research, eval)
 ├── requirements.txt # chromadb, pypdf, python-docx, requests, rank-bm25, duckduckgo-search, trafilatura
 └── README.md
 
-Documentation: doc/rag/
+Documentation: doc/ai-dev-suite/rag/
 ```
 
 ---

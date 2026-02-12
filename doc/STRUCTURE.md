@@ -8,9 +8,10 @@ Structure of the **zerwiz/setup** repo. AI Dev Suite tools: Elixir TUI, Electron
 
 ```
 setup/                          # zerwiz/setup – main repo for tools
-├── ai-dev-suite/               # Elixir TUI, Electron app, ACP adapter, install scripts (canonical source)
+├── ai-dev-suite/               # Elixir TUI, Electron app, ACP adapter, RAG, install scripts (canonical source)
+│   └── rag/                    # Python RAG tool
 ├── debugger/                   # Debug observer, A2A adapter (observer.sh, start-a2a.sh, a2a-adapter/)
-├── rag/                        # Python RAG tool
+│   └── rag/                    # RAG integration (reads suite rag.log, RAG-style memory)
 ├── doc/                        # All tool documentation
 ├── rules/                      # Deployment, GitHub, conventions
 ├── scripts/                    # Automation scripts
@@ -31,12 +32,12 @@ setup/                          # zerwiz/setup – main repo for tools
 | `elixir_tui/` | Elixir TUI (terminal UI): chat, memory, drive, research, install tools. Port 41434 API. |
 | `electron_app/` | Desktop app (Electron + React): Chat, Drive, Memory, Tools, Settings, Server. Spawns Elixir API. |
 | `acp-adapter/` | ACP adapter for Zed/OpenCode – stdio JSON-RPC to `/api/chat/stream`. |
-| `debugger/` | Observer (`observer.sh`), A2A agent (`start-a2a.sh`), `a2a-adapter/`, `electron-app/` (UI). Port 41435. |
+| `rag/` | Python RAG tool (index, query, research). Used by `/research` and standalone. |
 | `install.sh` | Curl-install script (Mac/Linux). |
 | `install.ps1` | PowerShell install (Windows). |
 | `install-full.sh` | Full install (API, Web, TUI, Electron). |
 
-**Start scripts** (in repo root): `start-ai-dev-suite-api.sh`, `start-ai-dev-suite-tui.sh`, `start-ai-dev-suite-electron.sh`, `start-ai-dev-suite-web.sh`, `start-ai-dev-suite-acp.sh`, `start-ai-dev-suite-debugger.sh` (full debugger: API + Ollama + UI), `start-ai-dev-suite-debugger-ui.sh` (UI only).
+**Start scripts** (in repo root): `start-ai-dev-suite-api.sh`, `start-ai-dev-suite-tui.sh`, `start-ai-dev-suite-electron.sh`, `start-ai-dev-suite-web.sh`, `start-ai-dev-suite-acp.sh`, `start-ai-dev-suite-debugger.sh` (debugger: API + Ollama + UI).
 
 ---
 
@@ -53,7 +54,7 @@ setup/                          # zerwiz/setup – main repo for tools
 
 ---
 
-## rag/
+## ai-dev-suite/rag/
 
 Python RAG tool: chunking, hybrid BM25+vector, reranker, incremental index. Used by AI Dev Suite `/research` and standalone.
 
@@ -63,6 +64,10 @@ Python RAG tool: chunking, hybrid BM25+vector, reranker, incremental index. Used
 | `scripts/load-test.sh` | Load testing |
 | `requirements.txt` | Python deps |
 
+## debugger/rag/
+
+RAG integration: debugger reads suite's `rag.log`, has RAG-style memory (`debugger_memory.md`). See [debugger/rag/README.md](../debugger/rag/README.md).
+
 ---
 
 ## doc/
@@ -70,7 +75,7 @@ Python RAG tool: chunking, hybrid BM25+vector, reranker, incremental index. Used
 | Path | Purpose |
 |------|---------|
 | `ai-dev-suite/` | START, FUNCTIONS, STORAGE, SERVER, LLAMACPP, GITHUB_AGENT, etc. |
-| `rag/` | RAG docs, load testing, production hardening |
+| `ai-dev-suite/rag/` | RAG docs, load testing, production hardening |
 | `CURL_INSTALLS.md` | All curl commands for homepage (whynotproductions.netlify.app) |
 | `STRUCTURE.md` | This file – repo structure |
 | `CHANGELOG.md` | Changelog for tools |
@@ -87,4 +92,4 @@ Python RAG tool: chunking, hybrid BM25+vector, reranker, incremental index. Used
 - **API:** `./start-ai-dev-suite-api.sh` or `cd ai-dev-suite/elixir_tui && mix run -e "AiDevSuiteTui.API.start()"`
 - **TUI:** `./start-ai-dev-suite-tui.sh`
 - **Electron:** `./start-ai-dev-suite-electron.sh`
-- **RAG:** `cd rag && python rag.py …`
+- **RAG:** `cd ai-dev-suite/rag && python rag.py …`

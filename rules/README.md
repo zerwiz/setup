@@ -29,5 +29,5 @@ Rules and conventions for tools in zerwiz/setup: AI Dev Suite, RAG, and future t
 
 ## Related
 
-- **Code:** `ai-dev-suite/`, `rag/`
+- **Code:** `ai-dev-suite/` (incl. `rag/`)
 - **Docs:** `doc/`

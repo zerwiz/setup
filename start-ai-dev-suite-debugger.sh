@@ -2,7 +2,7 @@
 # AI Dev Suite – Debugger
 # Starts API + Ollama (if needed), then the debugger Electron UI.
 # Usage: ./start-ai-dev-suite-debugger.sh
-# With observer + A2A: DEBUG=1 ./start-ai-dev-suite-debugger.sh
+# With A2A agent: DEBUG=1 ./start-ai-dev-suite-debugger.sh
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -45,33 +45,10 @@ if [ -f "$ELIXIR_DIR/mix.exs" ]; then
   fi
 fi
 
-# Optional: observer terminal + A2A agent
-if [ -n "${DEBUG:-}" ]; then
-  echo "Starting debug observer + A2A (DEBUG=1)..."
-  run_ollama_in_terminal() {
-    local tmp; tmp="$(mktemp)"
-    printf '%s\n' "$1" > "$tmp"
-    chmod +x "$tmp"
-    if command -v gnome-terminal >/dev/null 2>&1; then
-      gnome-terminal -- bash "$tmp"
-    elif command -v xterm >/dev/null 2>&1; then
-      xterm -e "bash $tmp; rm -f $tmp"
-    elif command -v konsole >/dev/null 2>&1; then
-      konsole -e bash "$tmp"
-    elif command -v xfce4-terminal >/dev/null 2>&1; then
-      xfce4-terminal -e "bash $tmp"
-    else
-      rm -f "$tmp"
-      return 1
-    fi
-    (sleep 2; rm -f "$tmp") &
-  }
-  if [ -f "$SCRIPT_DIR/debugger/observer.sh" ]; then
-    run_ollama_in_terminal "bash $SCRIPT_DIR/debugger/observer.sh" || true
-  fi
-  if [ -f "$SCRIPT_DIR/debugger/start-a2a.sh" ]; then
-    "$SCRIPT_DIR/debugger/start-a2a.sh" >> /tmp/ai-dev-suite-debug-a2a.log 2>&1 &
-  fi
+# Optional: A2A agent (DEBUG=1)
+if [ -n "${DEBUG:-}" ] && [ -f "$SCRIPT_DIR/debugger/start-a2a.sh" ]; then
+  echo "Starting A2A agent (DEBUG=1)..."
+  "$SCRIPT_DIR/debugger/start-a2a.sh" >> /tmp/ai-dev-suite-debug-a2a.log 2>&1 &
 fi
 
 # Start debugger UI

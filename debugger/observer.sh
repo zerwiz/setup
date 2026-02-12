@@ -2,8 +2,8 @@
 # AI Dev Suite – Debug observer
 # Watches API log, Ollama log, and reports health. Run alongside the app.
 # Uses qwen2.5-coder:3b to analyze output and suggest fixes (override: DEBUG_MODEL=qwen2.5-coder:7b)
-# Usage: ./debugger/observer.sh
-# Or: DEBUG=1 ./start-ai-dev-suite-electron.sh (spawns this automatically)
+# Usage: ./debugger/observer.sh (standalone terminal observer)
+# Observer is also embedded in the debugger UI (./start-ai-dev-suite-debugger.sh)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEBUG_MODEL="${DEBUG_MODEL:-qwen2.5-coder:3b}"

@@ -20,7 +20,7 @@ alwaysApply: true
 
 ## Documentation
 
-- All tool docs live in **`doc/`** (doc/ai-dev-suite/, doc/rag/, etc.).
+- All tool docs live in **`doc/`** (doc/ai-dev-suite/, doc/ai-dev-suite/rag/, etc.).
 - Each tool dir keeps a brief README pointing to `doc/<name>/`.
 - **When changing a tool:** Update the relevant doc. Add docs (e.g. STORAGE.md, FUNCTIONS.md) when adding features.
 

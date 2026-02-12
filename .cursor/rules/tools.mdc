@@ -14,12 +14,12 @@ This repo (zerwiz/setup) is never pushed to Netlify. Tools are delivered via cur
 
 - All tool docs live in **`doc/`**.
 - Each tool dir keeps a brief README pointing to `doc/<name>/`.
-- Structure: `doc/ai-dev-suite/`, `doc/rag/`.
+- Structure: `doc/ai-dev-suite/` (incl. `rag/`).
 - **When changing a tool:** Update the relevant doc. Add new docs when adding features (e.g. STORAGE.md, FUNCTIONS.md).
 
 ## Extra programs (AI Dev Suite, Workshop Setup)
 
-- **Location:** This repo (zerwiz/setup) at root: ai-dev-suite/, rag/, setup.sh, run-tui.sh, start-*.sh.
+- **Location:** This repo (zerwiz/setup) at root: ai-dev-suite/ (incl. rag/), debugger/, setup.sh, run-tui.sh, start-*.sh.
 - **Deployed from:** zerwiz/setup. Push directly here.
 - **Curl commands** must point to zerwiz/setup only.
 

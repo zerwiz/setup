@@ -15,11 +15,11 @@ The AI Dev Suite must work regardless of file and folder structure. Users may mo
 2. **RAG script** – Discover dynamically:
    - First: `AI_DEV_SUITE_RAG_SCRIPT` env (absolute path)
    - Else: `rag` in PATH
-   - Else: walk up from `File.cwd!()` and check `rag/rag.py` or `rag.py` in each ancestor dir
+   - Else: walk up from `File.cwd!()` and check `ai-dev-suite/rag/rag.py`, `rag/rag.py`, or `rag.py` in each ancestor dir
 
-3. **Requirements.txt** – Derive from RAG script path (same dir), or use the same discovery. No hardcoded `tools/rag` or `../rag` paths.
+3. **Requirements.txt** – Derive from RAG script path (same dir), or use the same discovery. No hardcoded `tools/rag`, `ai-dev-suite/rag`, or `../rag` paths.
 
-4. **Error messages** – Do not say "cd rag" or "cd tools/rag". Say: `Set AI_DEV_SUITE_RAG_SCRIPT` or `pip install duckduckgo-search trafilatura`.
+4. **Error messages** – Do not say "cd rag" or "cd ai-dev-suite/rag". Say: `Set AI_DEV_SUITE_RAG_SCRIPT` or `pip install duckduckgo-search trafilatura`.
 
 ## When adding or changing path logic
 

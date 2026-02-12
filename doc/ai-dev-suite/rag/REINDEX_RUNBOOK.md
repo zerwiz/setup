@@ -130,5 +130,5 @@ mv "$BACKUP_DIR" "$INDEX_DIR"
 ## See also
 
 - [RAG_BEST_PRACTICES.md](./RAG_BEST_PRACTICES.md) – Production considerations
-- [rag/rag.py](../../rag/rag.py) – Implementation
-- [rag/README.md](../../rag/README.md) – Quick start
+- [ai-dev-suite/rag/rag.py](../../../ai-dev-suite/rag/rag.py) – Implementation
+- [ai-dev-suite/rag/README.md](../../../ai-dev-suite/rag/README.md) – Quick start

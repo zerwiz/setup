@@ -18,7 +18,7 @@ Debug tools for the AI Dev Suite: observer (logs, health checks, test chat), A2A
 ./start-ai-dev-suite-debugger.sh
 
 # Electron UI only
-./start-ai-dev-suite-debugger-ui.sh
+./start-ai-dev-suite-debugger.sh
 
 # Observer (terminal)
 ./debugger/observer.sh

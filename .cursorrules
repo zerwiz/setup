@@ -29,6 +29,6 @@ Rules when working on tools. **zerwiz/setup is the main repo.** Develop there, c
 | Path | Purpose |
 |------|---------|
 | `ai-dev-suite/` | Elixir TUI, Electron app, ACP adapter, install scripts |
-| `rag/` | Python RAG tool |
+| `ai-dev-suite/rag/` | Python RAG tool |
 | `doc/` | Documentation (ai-dev-suite, rag) |
 | `setup.sh`, `run-tui.sh`, `start-*.sh` | Launchers and install scripts |

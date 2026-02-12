@@ -112,7 +112,9 @@ class DebugExecutor implements AgentExecutor {
             {
               role: "user",
               content:
-                "You are a debugging assistant for an AI chat app (Ollama + Elixir API + Electron). Analyze this debug output and suggest what might be wrong and how to fix it. Be concise (2-4 short bullets).\n\n---\n\n" +
+                "You are a debugging assistant for an AI chat app (Ollama + Elixir API + Electron). " +
+                "Edit file (read/write): Choose file → Read → edit → Write. Allowed: project root, ~/.config/ai-dev-suite. Cannot write to /tmp. " +
+                "Analyze this debug output and suggest what might be wrong and how to fix it. Be concise (2-4 short bullets).\n\n---\n\n" +
                 context,
             },
           ],
@@ -220,6 +222,7 @@ app.post("/api/analyze", async (req, res) => {
     const model = process.env.DEBUG_MODEL || "qwen2.5-coder:3b";
     const prompt =
       "You are a debugging assistant for an AI chat app (Ollama + Elixir API + Electron). " +
+      "Edit file (read/write): Choose file → Read → edit → Write. Allowed: project root, ~/.config/ai-dev-suite. Cannot write to /tmp. " +
       "Analyze this debug output and suggest what might be wrong and how to fix it. " +
       "Be concise (2-4 short bullets). User-approved fixes only.\n\n---\n\n";
 

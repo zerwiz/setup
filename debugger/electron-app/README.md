@@ -6,7 +6,7 @@ Desktop app for the debugger, styled like the AI Dev Suite.
 
 ```bash
 # From repo root
-./start-ai-dev-suite-debugger-ui.sh
+./start-ai-dev-suite-debugger.sh
 
 # Or from here
 npm run dev

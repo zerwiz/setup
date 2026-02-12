@@ -8,7 +8,7 @@
 
 | Destination | Contents |
 |-------------|----------|
-| **zerwiz/setup** | All tools content: ai-dev-suite/, rag/, doc/, start scripts, install scripts – **develop here** |
+| **zerwiz/setup** | All tools content: ai-dev-suite/ (incl. rag/), doc/, start scripts, install scripts – **develop here** |
 
 - Tools are delivered via `curl | bash` from raw.githubusercontent.com/zerwiz/setup.
 - Push directly to zerwiz/setup.
@@ -18,7 +18,7 @@
 ## 2. Documentation
 
 - **Location:** All tool docs live in **`doc/`** (in zerwiz/setup).
-- **Structure:** `doc/ai-dev-suite/`, `doc/rag/`, `doc/<new-tool>/`.
+- **Structure:** `doc/ai-dev-suite/` (incl. `rag/`), `doc/<new-tool>/`.
 - **Per-tool README:** Each `<name>/` dir keeps a brief README pointing to `doc/<name>/`.
 - **When changing a tool:** Update the relevant doc. Add docs (e.g. STORAGE.md, FUNCTIONS.md) when adding features.
 
@@ -91,7 +91,7 @@ The install must work on **any user machine** (macOS, Linux, Windows with Git Ba
 | Concern | Location |
 |---------|----------|
 | AI Dev Suite code | `ai-dev-suite/` (electron_app/, elixir_tui/, install.sh) |
-| RAG code | `rag/` |
+| RAG code | `ai-dev-suite/rag/` |
 | Tool docs | `doc/<name>/` |
 | Start scripts | `start-*.sh`, `run-tui.sh` |
 | Install scripts | `ai-dev-suite/install.sh`, `ai-dev-suite/install-full.sh` |

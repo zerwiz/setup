@@ -80,7 +80,7 @@ Memory, behavior, and drive content are stored in `~/.config/ai-dev-suite/` and 
 
 | Tool | Description |
 |------|-------------|
-| [**RAG**](./rag/) | Index docs, answer with Ollama, web research |
+| [**RAG**](./ai-dev-suite/rag/) | Index docs, answer with Ollama, web research |
 | [**AI Dev Suite**](./ai-dev-suite/) | AI dev install scripts + interactive TUI, Electron app, API |
 
 ## AI Dev Suite — Quick start
@@ -116,7 +116,7 @@ curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/setup.sh | bash
 | Path | Purpose |
 |------|---------|
 | [doc/](./doc/) | Overview and index |
-| [doc/rag/](./doc/rag/) | RAG setup, usage, options |
+| [doc/ai-dev-suite/rag/](./doc/ai-dev-suite/rag/) | RAG setup, usage, options |
 | [doc/ai-dev-suite/](./doc/ai-dev-suite/) | AI Dev Suite: START, FUNCTIONS, STORAGE, PLANNING |
 
 ## Structure
@@ -124,7 +124,7 @@ curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/setup.sh | bash
 ```
 setup/                   # zerwiz/setup – tools repo (this repo)
 ├── ai-dev-suite/       # Install, TUI, Electron app, ACP adapter (canonical source)
-├── rag/                # RAG script and deps
+├── ai-dev-suite/rag/   # RAG script and deps
 ├── doc/                # All tool documentation
 ├── rules/              # Deployment, GitHub, conventions
 ├── scripts/            # Automation scripts

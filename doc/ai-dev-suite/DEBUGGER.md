@@ -22,20 +22,17 @@ The debugger helps diagnose chat failures like "(no response)", "terminated", an
 ## Quick start
 
 ```bash
-# Full debugger (API + Ollama + UI; recommended)
+# Full debugger (API + Ollama + UI; observer embedded in UI)
 ./start-ai-dev-suite-debugger.sh
 
-# Electron UI only
-./start-ai-dev-suite-debugger-ui.sh
+# With A2A agent
+DEBUG=1 ./start-ai-dev-suite-debugger.sh
 
-# Observer (terminal with live logs + health + test chat)
+# Terminal observer (standalone, if preferred)
 ./debugger/observer.sh
 
-# A2A agent (expose debugger to other agents)
+# Run A2A agent manually
 ./debugger/start-a2a.sh
-
-# Both observer + A2A via main start script
-DEBUG=1 ./start-ai-dev-suite-electron.sh
 ```
 
 ---
@@ -45,17 +42,18 @@ DEBUG=1 ./start-ai-dev-suite-electron.sh
 Desktop app with the same styling as the AI Dev Suite:
 
 - **Status** – API (41434), Ollama (11434), Vite (5174) with auto-refresh every 10s
+- **Observer** – Embedded observer: combined [API] + [OLLAMA] log view (refreshes every 3s), status line, Ask / → Chat / Run check, memory link. Observer and debugger share RAG memory and context.
 - **Logs** – API log + selectable Suite log (Ollama | A2A | RAG | Electron), last 50 lines each
 - **Edit file** – Choose file → Read → edit → Write (project root or ~/.config/ai-dev-suite)
 - **Test Chat** – Runs a test request to `/api/chat/stream` and shows the output
 - **Model selector** – Choose any installed Ollama model for analysis and chat
 - **Ask model** – Sends full context (status, logs, processes, files) to the model for analysis
 
-**Run:** `./start-ai-dev-suite-debugger-ui.sh` or `cd debugger/electron-app && npm run dev`
+**Run:** `./start-ai-dev-suite-debugger.sh` or `cd debugger/electron-app && npm run dev`
 
 ### Chat interface
 
-Use **Chat** in the header to talk to the debugger. Each message automatically includes system context (health, processes, logs, files), so the debugger can answer with full visibility. Multi-turn conversation is supported. Same suggestions-only policy: it will not apply fixes automatically.
+Use **Chat** in the header to talk to the debugger. Each message automatically includes system context (health, processes, logs, files) and **RAG memory** (past fixes), so the debugger can answer with full visibility and recall prior solutions. Use **+ memory** on assistant messages to save Chat suggestions to RAG. Multi-turn conversation is supported. Same suggestions-only policy: it will not apply fixes automatically.
 
 ### Start, run fixes, edit files
 
@@ -75,12 +73,13 @@ All context is passed to qwen2.5-coder so it can suggest fixes with full visibil
 
 ### Memory (RAG-style recall)
 
-The debugger remembers every fix it suggests:
+Both Observer and Chat use the same RAG memory:
 
 - **Storage:** `~/.config/ai-dev-suite/debugger_memory.md`
-- **Auto-save:** After each successful analysis, the suggested fix is appended with timestamp, issue summary, and fix text
-- **Recall:** Past fixes are injected into the analysis prompt so qwen2.5-coder can reference and reuse prior solutions
-- **UI:** Use "Past fixes" in the header to view the full memory
+- **Auto-save:** After each successful analysis (Ask, Run check, Get fix suggestions), the suggested fix is appended
+- **Recall:** Past fixes are injected into the analysis prompt and Chat so the model can reference and reuse prior solutions
+- **Chat + memory:** Use **+ memory** on assistant messages to save Chat suggestions to RAG
+- **UI:** "Past fixes" in the header; Observer panel has a "memory" link
 
 ---
 

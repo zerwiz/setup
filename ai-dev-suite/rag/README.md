@@ -4,7 +4,7 @@ Index documents and answer with Ollama. Web research support.
 
 **Quick start:** `python rag.py index <files>` then `python rag.py query "question"`
 
-**Production (env):** `RAG_REDIS_URL`, `RAG_ALERT_WEBHOOK`, `RAG_ALERT_LATENCY_MS`. API rate limit: `RAG_RATE_LIMIT_PER_MIN`. See [doc/rag/PRODUCTION_HARDENING.md](../doc/rag/PRODUCTION_HARDENING.md).
+**Production (env):** `RAG_REDIS_URL`, `RAG_ALERT_WEBHOOK`, `RAG_ALERT_LATENCY_MS`. API rate limit: `RAG_RATE_LIMIT_PER_MIN`. See [doc/ai-dev-suite/rag/PRODUCTION_HARDENING.md](../../doc/ai-dev-suite/rag/PRODUCTION_HARDENING.md).
 
 **New options:**
 - `--chunk-tokens 512` – Token-based chunking (tiktoken)
@@ -21,4 +21,4 @@ pip install duckduckgo-search requests trafilatura
 ```
 Then: `python rag.py research "query" --context-only` — fetches URLs in the query directly and outputs raw context.
 
-**Full documentation:** [doc/rag/](../doc/rag/)
+**Full documentation:** [doc/ai-dev-suite/rag/](../../doc/ai-dev-suite/rag/)

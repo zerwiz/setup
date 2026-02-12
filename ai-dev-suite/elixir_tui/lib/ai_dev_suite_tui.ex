@@ -1145,6 +1145,7 @@ defmodule AiDevSuiteTui do
 
   defp walk_up_find_rag(dir) do
     candidates = [
+      Path.join([dir, "ai-dev-suite", "rag", "rag.py"]),
       Path.join([dir, "rag", "rag.py"]),
       Path.join(dir, "rag.py")
     ]

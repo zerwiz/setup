@@ -10,7 +10,7 @@ Branch strategy, PR workflow, and changelog for tools. **zerwiz/setup is the mai
 | **WhyNotProductionsHomepage** | Homepage only (systems/frontend). **Do not push tools here.** | https://github.com/zerwiz/WhyNotProductionsHomepage |
 
 - **Default branch:** `main` (in zerwiz/setup)
-- **Tools location:** zerwiz/setup repo root (ai-dev-suite/, doc/, rag/, setup.sh, run-tui.sh, etc.)
+- **Tools location:** zerwiz/setup repo root (ai-dev-suite/ incl. rag/, debugger/, doc/, setup.sh, run-tui.sh, etc.)
 
 ## Branch strategy
 

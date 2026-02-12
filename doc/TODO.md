@@ -1,6 +1,6 @@
 # Tools – To-Do
 
-Action items consolidated from all docs: [FUNCTIONS](./ai-dev-suite/FUNCTIONS.md), [PLANNING](./ai-dev-suite/PLANNING.md), [SERVER](./ai-dev-suite/SERVER.md), [LLAMACPP](./ai-dev-suite/LLAMACPP.md), [GITHUB_AGENT](./ai-dev-suite/GITHUB_AGENT.md), [ZED_OPENCODE_ACP](./ai-dev-suite/ZED_OPENCODE_ACP.md), [UI_PLANNING](./ai-dev-suite/UI_PLANNING.md), [AI_CHATBOT_INTEGRATION](./AI_CHATBOT_INTEGRATION.md), [RAG_BEST_PRACTICES](./rag/RAG_BEST_PRACTICES.md).
+Action items consolidated from all docs: [FUNCTIONS](./ai-dev-suite/FUNCTIONS.md), [PLANNING](./ai-dev-suite/PLANNING.md), [SERVER](./ai-dev-suite/SERVER.md), [LLAMACPP](./ai-dev-suite/LLAMACPP.md), [GITHUB_AGENT](./ai-dev-suite/GITHUB_AGENT.md), [ZED_OPENCODE_ACP](./ai-dev-suite/ZED_OPENCODE_ACP.md), [UI_PLANNING](./ai-dev-suite/UI_PLANNING.md), [AI_CHATBOT_INTEGRATION](./AI_CHATBOT_INTEGRATION.md), [RAG_BEST_PRACTICES](./ai-dev-suite/rag/RAG_BEST_PRACTICES.md).
 
 ---
 
@@ -60,7 +60,7 @@ From [ZED_OPENCODE_ACP.md](./ai-dev-suite/ZED_OPENCODE_ACP.md) – connect AI De
 
 ## RAG Tool
 
-**Current implementation:** `rag/rag.py` – recursive chunking (512 chars), hybrid BM25+vector, RRF fusion, incremental index, basic eval, in-memory cache. See RAG Best Practices checklist below.
+**Current implementation:** `ai-dev-suite/rag/rag.py` – recursive chunking (512 chars), hybrid BM25+vector, RRF fusion, incremental index, basic eval, in-memory cache. See RAG Best Practices checklist below.
 
 ### High priority
 
@@ -72,12 +72,12 @@ From [ZED_OPENCODE_ACP.md](./ai-dev-suite/ZED_OPENCODE_ACP.md) – connect AI De
 - [x] **Semantic chunking** – ✅ Done. `--chunk-strategy semantic` (paragraph-aware, token-based splits).
 - [x] **Query expansion** – ✅ Done. `--expand-query` uses LLM to generate alternatives; RRF across variants.
 - [x] **Eval: ARES/RAGTruth** – ✅ Done. `--eval-ares` writes ARES-compatible TSV for ares-ai integration.
-- [x] **Zero-downtime reindex runbook** – ✅ Done. `doc/rag/REINDEX_RUNBOOK.md` – staging dir, swap, rollback.
+- [x] **Zero-downtime reindex runbook** – ✅ Done. `doc/ai-dev-suite/rag/REINDEX_RUNBOOK.md` – staging dir, swap, rollback.
 
 ### Low priority / Production hardening
 
 - [x] **Rate limiting** – ✅ Done. Per-IP on `/api/research` via `RAG_RATE_LIMIT_PER_MIN` (Elixir RateLimitPlug).
-- [x] **Load and failure testing** – ✅ Done. `rag/scripts/load-test.sh` + LOAD_TESTING.md.
+- [x] **Load and failure testing** – ✅ Done. `ai-dev-suite/rag/scripts/load-test.sh` + LOAD_TESTING.md.
 - [x] **Redis caching** – ✅ Done. `RAG_REDIS_URL` enables Redis; falls back to in-memory.
 - [x] **Alerting** – ✅ Done. `RAG_ALERT_WEBHOOK` + `RAG_ALERT_LATENCY_MS` for latency/error alerts.
 

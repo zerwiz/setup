@@ -16,7 +16,7 @@ Documentation for the AI Dev Suite tools: Elixir TUI, Electron app, RAG, install
 
 | Tool | Description |
 |------|-------------|
-| **[RAG](./rag/)** | Index docs and answer with Ollama; web research. |
+| **[RAG](./ai-dev-suite/rag/)** | Index docs and answer with Ollama; web research. |
 | **[AI Dev Suite](./ai-dev-suite/)** | Install commands, Elixir TUI, Electron desktop app (Home, Chat, Drive, Memory, Tools, Settings, Server ↻). API on `:41434`. Internet/web search in Chat. Full install: `curl \| bash` → `ai-dev-suite-api`, `ai-dev-suite-web`, `ai-dev-suite-tui`, `ai-dev-suite-electron`. |
 | **Workshop Setup** | Installs curl, Node.js, Git. Push to zerwiz/setup. |
 
@@ -24,8 +24,8 @@ Documentation for the AI Dev Suite tools: Elixir TUI, Electron app, RAG, install
 
 ```bash
 # RAG (from repo root)
-python rag/rag.py index <files>
-python rag/rag.py query "<question>"
+python ai-dev-suite/rag/rag.py index <files>
+python ai-dev-suite/rag/rag.py query "<question>"
 
 # AI Dev Suite (full install: API, Web, TUI, Electron)
 curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/ai-dev-suite/install-full.sh | bash
@@ -49,9 +49,9 @@ curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/setup.sh | bash
 | [CURL_INSTALLS](./CURL_INSTALLS.md) | All curl commands for homepage – AI Dev Suite, tools, copy-paste ready |
 | [INSTALL_COMMANDS](./INSTALL_COMMANDS.md) | Terminal install commands; shareable: whynotproductions.netlify.app/install |
 | [TODO](./TODO.md) | Action items from FUNCTIONS and RAG Best Practices |
-| [RAG](./rag/README.md) | Setup, usage, options |
-| [RAG Functions](./rag/FUNCTIONS.md) | Full reference: commands, functions, constants |
-| [RAG Best Practices](./rag/RAG_BEST_PRACTICES.md) | How to build production RAG (chunking, embeddings, retrieval) |
+| [RAG](./ai-dev-suite/rag/README.md) | Setup, usage, options |
+| [RAG Functions](./ai-dev-suite/rag/FUNCTIONS.md) | Full reference: commands, functions, constants |
+| [RAG Best Practices](./ai-dev-suite/rag/RAG_BEST_PRACTICES.md) | How to build production RAG (chunking, embeddings, retrieval) |
 | [AI Chatbot Integration](./AI_CHATBOT_INTEGRATION.md) | Add chatbot to site (widget vs custom + Netlify Function) |
 
 ### AI Dev Suite

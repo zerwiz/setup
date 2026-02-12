@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
 import os from 'os';
-import { execSync, spawn } from 'child_process';
+import { execSync, execFileSync, spawn } from 'child_process';
 import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, readdirSync, statSync, createWriteStream } from 'fs';
 
 if (process.platform === 'linux') {
@@ -392,6 +392,58 @@ ipcMain.handle('debug:getOllamaModels', async () => {
   }
 });
 
+// Fallback list when Suite API is down (same as ai-dev-suite)
+const DOWNLOADABLE_MODELS = [
+  'llama3.2', 'llama3.1', 'mistral', 'mixtral', 'qwen2.5:7b', 'qwen2.5:14b',
+  'qwen2.5-coder:7b', 'qwen2.5-coder:14b', 'codellama', 'phi3', 'gemma2',
+  'deepseek-coder', 'neural-chat', 'orca-mini', 'command-r',
+];
+
+// IPC: list models available to download (from Suite API or fallback)
+ipcMain.handle('debug:getDownloadableModels', async () => {
+  try {
+    const r = await fetch('http://localhost:41434/api/downloadable_models', { signal: AbortSignal.timeout(3000) });
+    if (r.ok) {
+      const j = (await r.json()) as { models?: string[] };
+      return { models: j.models ?? DOWNLOADABLE_MODELS, error: null };
+    }
+  } catch {
+    /* Suite API down */
+  }
+  return { models: DOWNLOADABLE_MODELS, error: null };
+});
+
+// IPC: pull (download) an Ollama model
+ipcMain.handle('debug:pullModel', async (_ev, name: string) => {
+  const model = (name || '').trim();
+  if (!model) return { ok: false, output: '', error: 'Model name required' };
+  try {
+    const result = execFileSync('ollama', ['pull', model], {
+      encoding: 'utf-8',
+      timeout: 600_000, // 10 min
+      cwd: getProjectRoot(),
+    });
+    return { ok: true, output: result || '(pulled)', error: null };
+  } catch (e) {
+    const err = e as { stdout?: string; stderr?: string; message?: string };
+    const out = [err.stdout, err.stderr, err.message].filter(Boolean).join('\n') || String(e);
+    return { ok: false, output: out, error: String(e) };
+  }
+});
+
+// IPC: get Suite's preferred model (same as Chat uses) from API preferences
+ipcMain.handle('debug:getSuitePreferredModel', async () => {
+  try {
+    const r = await fetch('http://localhost:41434/api/preferences', { signal: AbortSignal.timeout(3000) });
+    if (!r.ok) return { preferredModel: null, error: null };
+    const j = (await r.json()) as { preferred_model?: string; preferredModel?: string };
+    const m = (j.preferred_model ?? j.preferredModel ?? '').trim();
+    return { preferredModel: m || null, error: null };
+  } catch {
+    return { preferredModel: null, error: null };
+  }
+});
+
 // Resolve Ollama model: use first from /api/tags; prefer DEBUG_MODEL or qwen2.5-coder if installed
 async function resolveOllamaModel(): Promise<{ model: string; hasModels: boolean }> {
   const preferred = process.env.DEBUG_MODEL || 'qwen2.5-coder:3b';
@@ -439,9 +491,10 @@ ipcMain.handle('debug:runAnalysis', async (_ev, payload: { context: string; mode
     : '';
   const prompt =
     'You are a debugging assistant for an AI chat app (Ollama + Elixir API + Electron). ' +
-    'You have visibility into processes, terminals, and files. You can read and write files under the project root or ~/.config/ai-dev-suite. ' +
+    'You have visibility into processes, terminals, and files. ' +
+    'Edit file (read/write): Choose file → Read → edit → Write. Allowed: project root, ~/.config/ai-dev-suite. Cannot write to /tmp. ' +
     'Analyze the debug output. For each problem: Problem: [what is wrong]. Suggestion: [how to fix]. ' +
-    'Include exact commands for Run fix box; or file edits (path + full content). User approves all changes. 2–5 bullets. Suggest only.' +
+    'Include exact commands for Run fix box; or file edits (path + full content for Edit file). User approves all changes. 2–5 bullets. Suggest only.' +
     memoryBlock;
   const body = JSON.stringify({
     model,
@@ -453,7 +506,7 @@ ipcMain.handle('debug:runAnalysis', async (_ev, payload: { context: string; mode
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body,
-      signal: AbortSignal.timeout(60000),
+      signal: AbortSignal.timeout(180000),
     });
     if (!res.ok) return { ok: false, text: '', error: `HTTP ${res.status}` };
     const j = (await res.json()) as { message?: { content?: string } };
@@ -467,11 +520,12 @@ ipcMain.handle('debug:runAnalysis', async (_ev, payload: { context: string; mode
     }
     return { ok: true, text, error: null };
   } catch (e) {
-    return { ok: false, text: '', error: String(e) };
+    const msg = String(e);
+    return { ok: false, text: '', error: msg.includes('timeout') ? 'Analysis timed out (3 min). Try a smaller model or ensure Ollama is responsive.' : msg };
   }
 });
 
-// IPC: chat with debugger (Ollama) – multi-turn conversation (model optional)
+// IPC: chat with debugger (Ollama) – multi-turn conversation with RAG memory (model optional)
 ipcMain.handle('debug:chat', async (_ev, payload: { messages: { role: string; content: string }[]; context?: string; model?: string | null }) => {
   let model = payload.model;
   if (!model) {
@@ -479,14 +533,28 @@ ipcMain.handle('debug:chat', async (_ev, payload: { messages: { role: string; co
     if (!res.hasModels) return { ok: false, text: '', error: 'No Ollama models found. Run: ollama pull llama3.2' };
     model = res.model;
   }
+  let memoryContent = '';
+  const memoryPath = getDebuggerMemoryPath();
+  if (existsSync(memoryPath)) {
+    try {
+      memoryContent = readFileSync(memoryPath, 'utf-8');
+    } catch {
+      /* ignore */
+    }
+  }
+  const memoryBlock = memoryContent.trim()
+    ? `\n\n**Past fixes you suggested (for reference):**\n${memoryContent.slice(-6000)}\n---\n`
+    : '';
   const systemPrompt =
     'You are the AI Dev Suite Debugger. You help users debug their AI chat app (Ollama + Elixir API + Electron). ' +
-    'You have visibility into processes, logs, and files. You can read and write files under the project root or ~/.config/ai-dev-suite. ' +
-    'Give Problem/Suggestion format. Include exact commands for Run fix box, or file path + full content for Edit file. Suggest only; user approves.';
+    'You have visibility into processes, logs, and files. ' +
+    'Edit file (read/write): Choose file → Read → edit → Write. Allowed: project root, ~/.config/ai-dev-suite. Cannot write to /tmp. ' +
+    'Give Problem/Suggestion format. Include exact commands for Run fix box, or file path + full content for Edit file. Suggest only; user approves. ' +
+    'Reference past fixes above when relevant.';
   const contextBlock = payload.context?.trim()
     ? `\n\n**Current system context:**\n${payload.context.slice(0, 4000)}\n---\n`
     : '';
-  const sysMsg = { role: 'system', content: systemPrompt + contextBlock };
+  const sysMsg = { role: 'system', content: systemPrompt + memoryBlock + contextBlock };
   const messages = [sysMsg, ...payload.messages];
   const body = JSON.stringify({ model, messages, stream: false });
   try {
@@ -494,7 +562,7 @@ ipcMain.handle('debug:chat', async (_ev, payload: { messages: { role: string; co
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body,
-      signal: AbortSignal.timeout(90000),
+      signal: AbortSignal.timeout(300000),
     });
     if (!res.ok) {
       const errBody = await res.text();
@@ -511,7 +579,8 @@ ipcMain.handle('debug:chat', async (_ev, payload: { messages: { role: string; co
     const text = j.message?.content || '';
     return { ok: true, text, error: null };
   } catch (e) {
-    return { ok: false, text: '', error: String(e) };
+    const msg = String(e);
+    return { ok: false, text: '', error: msg.includes('timeout') ? 'Chat timed out (5 min). Try a smaller model or ensure Ollama is responsive.' : msg };
   }
 });
 
