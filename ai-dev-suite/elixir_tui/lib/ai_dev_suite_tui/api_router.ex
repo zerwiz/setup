@@ -123,6 +123,13 @@ defmodule AiDevSuiteTui.ApiRouter do
     send_json(conn, 200, %{ok: true})
   end
 
+  post "/api/bye" do
+    model = conn.body_params["model"] || "llama3.2:latest"
+    messages = conn.body_params["messages"] || []
+    AiDevSuiteTui.api_extract_conversation_facts(model, messages)
+    send_json(conn, 200, %{ok: true})
+  end
+
   get "/api/behavior" do
     send_json(conn, 200, %{content: AiDevSuiteTui.api_behavior_content()})
   end

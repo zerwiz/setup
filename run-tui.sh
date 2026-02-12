@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 # AI Dev Suite TUI – Run interactive installer (macOS, Linux)
-# Downloads and runs the Elixir TUI. Installs Elixir if needed.
+# If run from cloned setup repo: uses local copy. Otherwise downloads and runs.
 # Run: curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/run-tui.sh | bash
 
 set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+if [[ -n "$SCRIPT_DIR" && -d "$SCRIPT_DIR/ai-dev-suite/elixir_tui" ]]; then
+  cd "$SCRIPT_DIR/ai-dev-suite/elixir_tui"
+  exec ./start.sh
+fi
 
 RED='\033[91m'
 DIM='\033[2m'

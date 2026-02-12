@@ -89,6 +89,7 @@ type ChatContextType = {
   setSelectedModel: (model: string) => void;
   setKnowledgeBase: (kb: string) => void;
   setChatTitle: (id: string, title: string) => void;
+  saveNow: () => void;
 };
 
 const ChatContext = createContext<ChatContextType | null>(null);
@@ -177,6 +178,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setChats((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)));
   }, []);
 
+  const saveNow = useCallback(() => {
+    savePersistedState(chats, activeChatId ?? chats[0]?.id ?? null);
+  }, [chats, activeChatId]);
+
   return (
     <ChatContext.Provider
       value={{
@@ -190,6 +195,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         setSelectedModel,
         setKnowledgeBase,
         setChatTitle,
+        saveNow,
       }}
     >
       {children}

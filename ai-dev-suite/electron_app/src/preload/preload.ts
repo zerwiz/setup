@@ -1,4 +1,4 @@
-import { contextBridge } from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
 
 const API_BASE = 'http://localhost:41434';
 
@@ -41,6 +41,7 @@ const apiFetch = async (path: string, options?: RequestInit & { timeout?: number
 contextBridge.exposeInMainWorld('api', {
   base: API_BASE,
   fetch: apiFetch,
+  quitApp: () => ipcRenderer.invoke('app:quit'),
   get(path: string) {
     return apiFetch(path);
   },

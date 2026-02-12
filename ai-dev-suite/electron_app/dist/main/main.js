@@ -76,3 +76,10 @@ electron_1.app.on('window-all-closed', () => {
     if (process.platform !== 'darwin')
         electron_1.app.quit();
 });
+electron_1.ipcMain.handle('app:quit', () => {
+    if (apiProcess) {
+        apiProcess.kill();
+        apiProcess = null;
+    }
+    electron_1.app.quit();
+});

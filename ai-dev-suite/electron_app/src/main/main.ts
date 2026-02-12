@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import { spawn, ChildProcess } from 'child_process';
 import { existsSync } from 'fs';
@@ -81,4 +81,12 @@ app.on('window-all-closed', () => {
     apiProcess = null;
   }
   if (process.platform !== 'darwin') app.quit();
+});
+
+ipcMain.handle('app:quit', () => {
+  if (apiProcess) {
+    apiProcess.kill();
+    apiProcess = null;
+  }
+  app.quit();
 });

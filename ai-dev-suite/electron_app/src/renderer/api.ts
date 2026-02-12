@@ -37,8 +37,8 @@ const api = typeof window !== 'undefined' && window.api
   ? window.api
   : {
       get: (path: string) => browserFetch(path),
-      post: (path: string, body: unknown) =>
-        browserFetch(path, { method: 'POST', body: JSON.stringify(body) }),
+      post: (path: string, body: unknown, opts?: { timeout?: number }) =>
+        browserFetch(path, { method: 'POST', body: JSON.stringify(body), ...opts }),
       uploadFile,
     };
 
@@ -144,4 +144,15 @@ export async function research(query: string): Promise<{ result?: string; error?
 
 export async function getConfig(): Promise<{ config_dir: string }> {
   return (await api.get('/api/config')) as { config_dir: string };
+}
+
+export async function saveConversationFacts(
+  model: string,
+  messages: { role: string; content: string }[]
+): Promise<{ ok?: boolean; error?: string }> {
+  const opts = { timeout: 120_000 };
+  return (await api.post('/api/bye', { model, messages }, opts)) as {
+    ok?: boolean;
+    error?: string;
+  };
 }

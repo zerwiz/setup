@@ -7,6 +7,7 @@ import Drive from './screens/Drive';
 import Memory from './screens/Memory';
 import Settings from './screens/Settings';
 import OllamaStatus from './components/OllamaStatus';
+import QuitButton from './components/QuitButton';
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
             </h1>
             <div className="flex items-center gap-4">
               <OllamaStatus />
+              <QuitButton />
               <nav className="flex gap-1">
               {[
                 { to: '/', label: 'Home' },

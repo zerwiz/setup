@@ -43,6 +43,7 @@ const apiFetch = async (path, options) => {
 electron_1.contextBridge.exposeInMainWorld('api', {
     base: API_BASE,
     fetch: apiFetch,
+    quitApp: () => electron_1.ipcRenderer.invoke('app:quit'),
     get(path) {
         return apiFetch(path);
     },

@@ -1,14 +1,14 @@
-# AI Dev Suite
+# Zerwiz AI Dev Suite
 
-Terminal tool that displays AI development resources and install commands. Styled with the WhyNot Productions look.
+Terminal and desktop tools for AI development resources, install commands, and Ollama chat. Styled with the WhyNot Productions look.
 
 **Must be pushed to zerwiz/setup.** See `rules/deployment/rules.md` and `docs/for-zerwiz-setup/`.
 
 ## Purpose
 
-- Show installation commands for Zed, LM Studio, Ollama, Pinokio, ClawCode
-- Link to model libraries (Hugging Face, Civitai) and frameworks (Agent OS, BMAD)
-- Zero installation: script echoes formatted content only; user copies commands
+- **Electron app** – Desktop GUI: Home, Tools, Chat, Drive, Memory, Settings. Quit button saves workspace and all chats.
+- **Elixir TUI** – Interactive terminal: install tools, chat with Ollama, slash commands (`/memory`, `/remember`, `/drive`, `/research`, `/bye`)
+- **Install script** – Installation commands for Zed, LM Studio, Ollama, Pinokio, ClawCode; link to model libraries and frameworks
 
 ## Usage
 

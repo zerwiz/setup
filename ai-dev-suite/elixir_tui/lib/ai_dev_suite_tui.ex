@@ -1015,6 +1015,19 @@ defmodule AiDevSuiteTui do
 
   def api_remember(text, model), do: append_to_memory(text, model)
   def api_behavior_append(text), do: append_to_behavior(text)
+
+  def api_extract_conversation_facts(model, messages) do
+    msgs =
+      (messages || [])
+      |> Enum.map(fn
+        %{"role" => r, "content" => c} when is_binary(r) and is_binary(c) -> %{role: r, content: c}
+        %{role: r, content: c} when is_binary(r) and is_binary(c) -> %{role: r, content: c}
+        _ -> nil
+      end)
+      |> Enum.reject(&is_nil/1)
+    extract_and_save_conversation_facts(model || "llama3.2:latest", msgs)
+  end
+
   def api_memory_content, do: load_rag_memory()
   def api_memory_manual, do: load_manual_memory()
   def api_memory_conv, do: load_conversation_memory()

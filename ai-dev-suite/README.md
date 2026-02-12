@@ -1,7 +1,9 @@
-# AI Dev Suite
+# Zerwiz AI Dev Suite
 
-Terminal tool for AI dev resources and install commands. Interactive Elixir TUI or bash script.
+Terminal and desktop tools for AI dev resources, install commands, and Ollama chat.
 
-**Quick start:** `./elixir_tui/start.sh` (macOS/Linux) or `elixir_tui\start.ps1` (Windows)
+- **Electron app:** `electron_app/` – GUI with Home, Tools, Chat, Drive, Memory, Settings. Quit button saves workspace and chats.
+- **Elixir TUI:** `elixir_tui/` – Interactive terminal. `./elixir_tui/start.sh` (macOS/Linux) or `elixir_tui\start.ps1` (Windows)
+- **Install script:** `install.sh` – Display or run install commands
 
 **Full documentation:** [tools/doc/ai-dev-suite/](../doc/ai-dev-suite/)
