@@ -9,10 +9,12 @@ const apiFetch = async (path, options) => {
     const id = setTimeout(() => controller.abort(), timeout);
     try {
         const { timeout: _, ...opts } = options ?? {};
+        const isFormData = opts.body instanceof FormData;
+        const headers = isFormData ? (opts.headers ?? {}) : { 'Content-Type': 'application/json', ...opts?.headers };
         const res = await fetch(url, {
             ...opts,
             signal: controller.signal,
-            headers: { 'Content-Type': 'application/json', ...opts?.headers },
+            headers,
         });
         clearTimeout(id);
         let data;
@@ -46,5 +48,10 @@ electron_1.contextBridge.exposeInMainWorld('api', {
     },
     post(path, body, options) {
         return apiFetch(path, { method: 'POST', body: JSON.stringify(body), ...options });
+    },
+    uploadFile(path, file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        return apiFetch(path, { method: 'POST', body: formData });
     },
 });

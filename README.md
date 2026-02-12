@@ -65,4 +65,4 @@ setup/
 
 ## Source
 
-These files are maintained in [WhyNotProductionsHomepage](https://github.com/zerwiz/WhyNotProductionsHomepage) under `tools/` and `docs/for-zerwiz-setup/`. Push updates from there to this repo.
+These files are maintained in [WhyNotProductionsHomepage](https://github.com/zerwiz/WhyNotProductionsHomepage) under `tools/` and `docs/for-zerwiz-setup/`. Push updates: run `./scripts/push-to-setup.sh` from that repo root.
