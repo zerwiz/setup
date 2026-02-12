@@ -9,6 +9,7 @@ Format: list entries under a date/version heading; use present tense (“Add …
 
 ## [Unreleased]
 
+- README: add short descriptions of AI Dev Suite, Debugger, and Observer below collaboration line.
 - CURL_INSTALLS: add Share blocks section with correct zerwiz/setup URLs for homepage/share pages (fix old WhyNotProductionsHomepage/for-zerwiz-setup URLs).
 - Add run-debugger.sh, run-observer.sh – curl | bash quick run for debugger and observer (no permanent install).
 - install-full.sh: include debugger – install ai-dev-suite + debugger + start scripts; add launchers ai-dev-suite-debugger, ai-dev-suite-and-debugger.

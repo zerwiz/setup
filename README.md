@@ -2,6 +2,10 @@
 
 **Collaborate with me to make this system better.** It's alpha for now — lots of bugs and lots to do. Your feedback and contributions are welcome.
 
+**AI Dev Suite** — Local-first chat, memory, and RAG research. One curl install. Use it in the terminal (TUI), as a desktop app (Electron), or via API. Runs offline with Ollama. Connect to Zed, OpenCode, and ACP-compatible IDEs.
+
+**Debugger** — When the Suite shows "(no response)" or errors, the debugger helps you see what’s wrong. Status, logs, test chat, and AI-backed fix suggestions. Includes the **Observer** (embedded in the UI or run as a terminal script) that tails API and Ollama logs, health checks every 10s. Run it standalone or alongside the Suite.
+
 ---
 
 ## About me
