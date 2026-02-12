@@ -1,0 +1,32 @@
+---
+description: Tools workspace core – zerwiz/setup is main repo; changelog, commits, docs
+alwaysApply: true
+---
+
+# Tools workspace core
+
+**zerwiz/setup is the main repo for tools.** Work there. Do not push tools to WhyNotProductionsHomepage.
+
+## Changelog and commits
+
+- **Changelog path:** `doc/CHANGELOG.md` (in zerwiz/setup)
+- **Commit style:** `feat: ...`, `fix: ...`, `docs: ...`, `chore: ...`
+- No merge to `main` without a CHANGELOG entry when the change is user- or deploy-relevant.
+
+## Deployment
+
+- **Tools delivery:** zerwiz/setup. Push directly to zerwiz/setup.
+- **Curl URLs:** All must point to raw.githubusercontent.com/zerwiz/setup only.
+- WhyNotProductionsHomepage is for the homepage only; tools are never pushed there.
+
+## Documentation
+
+- All tool docs live in **`doc/`** (doc/ai-dev-suite/, doc/rag/, etc.).
+- Each tool dir keeps a brief README pointing to `doc/<name>/`.
+- **When changing a tool:** Update the relevant doc. Add docs (e.g. STORAGE.md, FUNCTIONS.md) when adding features.
+
+## Paths (when working in zerwiz/setup)
+
+| Path | Purpose |
+|------|---------|
+| `doc/CHANGELOG.md` | Changelog |

@@ -6,6 +6,11 @@ defmodule AiDevSuiteTui.API do
 
   def start do
     spawn(&ensure_rag_deps/0)
+    case AiDevSuiteTui.LlamaCppServer.start_link() do
+      {:ok, _} -> :ok
+      {:error, {:already_started, _}} -> :ok
+      _ -> :ok
+    end
     port = Application.get_env(:ai_dev_suite_tui, :api_port, 41_434)
     {:ok, _} = Plug.Cowboy.http(AiDevSuiteTui.ApiRouter, [], port: port)
     IO.puts("Zerwiz AI Dev Suite API running at http://localhost:#{port}")

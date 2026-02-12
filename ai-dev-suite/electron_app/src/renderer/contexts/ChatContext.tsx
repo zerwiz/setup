@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { getPreferences, savePreferences } from '../api';
 
 export type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
@@ -138,6 +139,26 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     savePersistedState(chats, activeChatId ?? chats[0]?.id ?? null);
   }, [chats, activeChatId]);
 
+  useEffect(() => {
+    let mounted = true;
+    getPreferences()
+      .then((p) => {
+        if (!mounted || !p?.preferred_model) return;
+        const preferred = p.preferred_model;
+        setChats((prev) => {
+          if (prev.length === 0) return prev;
+          const first = prev[0]!;
+          if (first.selectedModel === DEFAULT_MODEL) {
+            return [{ ...first, selectedModel: preferred }, ...prev.slice(1)];
+          }
+          return prev;
+        });
+      })
+      .catch(() => {});
+    return () => { mounted = false; };
+  }, []);
+
+
   const resolvedActiveId = activeChatId ?? chats[0]?.id ?? null;
   const activeChat = resolvedActiveId
     ? chats.find((c) => c.id === resolvedActiveId) ?? chats[0]
@@ -205,6 +226,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setChats((prev) =>
       prev.map((c) => (c.id === targetId ? { ...c, selectedModel: model } : c))
     );
+    savePreferences({ preferred_model: model }).catch(() => {});
   }, [resolvedActiveId, chats]);
 
   const setKnowledgeBases = useCallback((kbs: string[]) => {

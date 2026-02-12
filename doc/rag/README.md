@@ -73,6 +73,11 @@ python rag.py eval --eval-file eval.jsonl
 - `--citations` – Print extracted citations after answer
 - `--web` – Include web search results (query command)
 
+## Documentation
+
+- **[FUNCTIONS.md](./FUNCTIONS.md)** – Full reference of all functions, constants, and commands.
+- [RAG_BEST_PRACTICES.md](./RAG_BEST_PRACTICES.md) – Production RAG design guide.
+
 ## Implementation status
 
 | Phase | Status |

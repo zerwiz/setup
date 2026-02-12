@@ -1,0 +1,35 @@
+# Tools – WhyNot Productions
+
+Rules when working on tools. **zerwiz/setup is the main repo.** Develop there, commit there, push there. Do not push tools to WhyNotProductionsHomepage.
+
+## Version control and changelog
+
+- **Main repo for tools:** https://github.com/zerwiz/setup — develop here, commit, PR, changelog, curl delivery
+- **WhyNotProductionsHomepage:** Homepage only. Do not push tools here.
+- **Default branch:** `main`. Use feature/fix branches for larger changes (see `rules/services/github/rules.md`).
+- **Changelog:** Update `doc/CHANGELOG.md` in zerwiz/setup before every commit that changes behavior or content.
+- **Commit messages:** Prefer conventional style: `feat: ...`, `fix: ...`, `docs: ...`, `chore: ...`.
+- **Credentials:** Stored locally only, gitignored. Never commit real credentials.
+
+## Deployment
+
+- **Tools live in zerwiz/setup.** Push directly to zerwiz/setup. No sync from WhyNotProductionsHomepage.
+- **Curl URLs:** All commands point to raw.githubusercontent.com/zerwiz/setup only.
+
+## Rules and docs
+
+| Area | Path | Purpose |
+|------|------|---------|
+| **Cursor AI** | `.cursor/rules/` | AI agent guidance when editing in tools. |
+| **GitHub** | `rules/services/github/` | Branch strategy, PR workflow, changelog. |
+| **Tool rules** | `rules/rules.md` | Deployment, docs, push workflow, curl URLs. |
+| **Structure** | `doc/STRUCTURE.md` | Tools folder structure overview. |
+
+## Repo structure (in zerwiz/setup)
+
+| Path | Purpose |
+|------|---------|
+| `ai-dev-suite/` | Elixir TUI, Electron app, ACP adapter, install scripts |
+| `rag/` | Python RAG tool |
+| `doc/` | Documentation (ai-dev-suite, rag) |
+| `setup.sh`, `run-tui.sh`, `start-*.sh` | Launchers and install scripts |

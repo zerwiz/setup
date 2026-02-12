@@ -1,25 +1,38 @@
 # Server Screen
 
-The **Server ↻** screen in the AI Dev Suite is a placeholder for future [llama.cpp](https://github.com/ggerganov/llama.cpp) server integration.
+The **Server ↻** screen in the AI Dev Suite manages [llama.cpp](https://github.com/ggerganov/llama.cpp) server processes as an alternative to Ollama.
 
 ## Purpose
 
-Future integration point for llama.cpp server mode. Run models as local servers, e.g.:
+Run GGUF models as local OpenAI-compatible servers, e.g.:
 
 ```bash
-./server -m model.gguf
+./server -m model.gguf --port 8080
 # Serves at http://localhost:8080 (OpenAI-compatible API)
 ```
 
-## Current status
+## Features
 
-**Integration coming later.**
+- **Start / Stop** – Launch and stop the llama.cpp server process
+- **Configure** – Model path (required), port (default 8080), optional server binary path
+- **Status** – Shows running state, port, and current model path
+- **Config storage** – `~/.config/ai-dev-suite/server_config.json`
 
-The screen currently shows a placeholder. When implemented, it will allow you to:
+The server binary is auto-detected when `server_path` is empty:
 
-- Start and stop llama.cpp servers
-- Configure model path and port
-- Use custom GGUF models with the suite (alternative to Ollama)
+- `server` in PATH
+- `~/llama.cpp/build/bin/server`
+- `~/llama.cpp/server`
+- `/usr/local/bin/llama-server`
+- `/usr/local/bin/server`
+
+## API
+
+- `GET /api/server/status` – running, port, model_path, server_path
+- `GET /api/server/config` – current config
+- `PUT /api/server/config` – save config (model_path, port, server_path)
+- `POST /api/server/start` – start server
+- `POST /api/server/stop` – stop server
 
 ## Related docs
 

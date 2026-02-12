@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { getMemory, getMemoryModels, remember } from '../api';
+import { getMemory, getMemoryModels, remember, writeMemoryManual, writeMemoryConv } from '../api';
+
+const CONV_SEP = '\n\n--- Conversation memory ---\n\n';
 
 export default function Memory() {
   const [content, setContent] = useState('');
@@ -7,6 +9,7 @@ export default function Memory() {
   const [textInput, setTextInput] = useState('');
   const [modelInput, setModelInput] = useState('llama3.2:latest');
   const [loading, setLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = () => {
@@ -15,6 +18,23 @@ export default function Memory() {
   };
 
   useEffect(() => load(), []);
+
+  const handleSave = async () => {
+    setSaveLoading(true);
+    setError(null);
+    try {
+      const idx = content.indexOf(CONV_SEP);
+      const manual = idx >= 0 ? content.slice(0, idx).trim() : content.trim();
+      const conv = idx >= 0 ? content.slice(idx + CONV_SEP.length).trim() : '';
+      await writeMemoryManual(manual);
+      await writeMemoryConv(conv);
+      load();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setSaveLoading(false);
+    }
+  };
 
   const handleRemember = async () => {
     const text = textInput.trim();
@@ -72,10 +92,23 @@ export default function Memory() {
       </div>
 
       <div className="rounded-lg border border-whynot-border bg-whynot-surface p-4">
-        <h3 className="text-sm font-medium text-whynot-muted mb-2">Memory content</h3>
-        <pre className="text-sm text-whynot-body font-mono whitespace-pre-wrap max-h-96 overflow-y-auto">
-          {content || '(empty)'}
-        </pre>
+        <div className="flex items-center justify-between gap-4 mb-2">
+          <h3 className="text-sm font-medium text-whynot-muted">Memory content</h3>
+          <button
+            onClick={handleSave}
+            disabled={saveLoading}
+            className="px-4 py-2 rounded bg-whynot-accent text-white text-sm font-medium hover:opacity-90 disabled:opacity-50 shrink-0"
+          >
+            {saveLoading ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="(empty) – Add notes manually or use Add to memory above."
+          className="w-full min-h-[200px] max-h-96 p-3 rounded border border-whynot-border bg-whynot-bg text-whynot-body font-mono text-sm whitespace-pre-wrap resize-y focus:outline-none focus:ring-2 focus:ring-whynot-accent/50 focus:border-whynot-accent"
+          spellCheck={false}
+        />
       </div>
     </div>
   );

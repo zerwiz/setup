@@ -1,0 +1,24 @@
+{
+  "name": "ai-dev-suite-acp-adapter",
+  "version": "0.1.0",
+  "description": "ACP adapter for AI Dev Suite – connects Zed/OpenCode to local AI via Agent Client Protocol",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "ai-dev-suite-acp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": ["acp", "agent", "zed", "opencode", "ai-dev-suite"],
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@agentclientprotocol/sdk": "^0.13.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

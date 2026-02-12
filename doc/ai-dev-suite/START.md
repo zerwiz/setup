@@ -41,6 +41,33 @@ Then run any launcher:
 
 ---
 
+## Zed & OpenCode (ACP)
+
+Use the AI Dev Suite as an ACP agent in Zed or OpenCode. **Prerequisite:** API running at http://localhost:41434 (Electron app or `ai-dev-suite-api`).
+
+**Build the adapter:**
+```bash
+cd ~/.local/share/ai-dev-suite/acp-adapter   # or tools/ai-dev-suite/acp-adapter from repo
+npm install && npm run build
+```
+
+**Zed config** – add to `~/.config/zed/settings.json`:
+```json
+{
+  "agent_servers": {
+    "AI Dev Suite": {
+      "command": "node",
+      "args": ["/home/YOUR_USER/.local/share/ai-dev-suite/acp-adapter/dist/index.js"]
+    }
+  }
+}
+```
+Replace the path with your actual install path. Then: **Command Palette** → `agent: new thread` → select "AI Dev Suite".
+
+**OpenCode:** See [ZED_OPENCODE_ACP.md](./ZED_OPENCODE_ACP.md) §7. OpenCode ACP docs currently describe OpenCode as the agent; no published config yet for OpenCode as client connecting to external agents. Use Zed or JetBrains today.
+
+---
+
 ## Quick run (no install)
 
 **TUI only** (downloads and runs; needs Elixir):
@@ -61,6 +88,7 @@ If you have the WhyNotProductions Homepage repo cloned:
 | `./start-ai-dev-suite-web.sh` | API + Vite → http://localhost:5174 |
 | `./start-ai-dev-suite-electron.sh` | Electron desktop app |
 | `./start-ai-dev-suite-tui.sh` | TUI (terminal menu) |
+| `./start-ai-dev-suite-acp.sh` | ACP adapter (stdio, for Zed/OpenCode) |
 
 **On startup**, all scripts run `ensure-rag-deps.sh` to install RAG/web research deps (duckduckgo-search, trafilatura, etc.) for Internet mode in Chat.
 

@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Build / dist
+dist/
+release/
+*.pyc
+__pycache__/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# User-specific (cloners create their own)
+memory.md
+conversation_memory.md
+behavior.md

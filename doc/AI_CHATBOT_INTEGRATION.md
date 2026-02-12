@@ -1,12 +1,14 @@
 # How to Integrate an AI Chatbot – WhyNot Productions Homepage
 
-Guide for adding an AI chatbot so visitors can chat directly on the site. The site is **static Astro on Netlify**; the chatbot can be a third-party widget (easiest) or a custom UI that talks to an AI API via a serverless function.
+Guide for adding an AI chatbot so visitors can chat directly on the site. The site is **static Astro on Netlify**; the chatbot can be a third-party widget (easiest) or a custom UI that talks to an AI API via a Netlify Function.
 
 ---
 
 ## 1. Overview
 
-**Goal:** Let visitors have a text conversation with an AI (e.g. answer questions about you, courses, workshops, booking) without leaving the site.
+**Goal:** Let visitors have a text conversation with an AI (e.g. answer questions about Zerwiz, courses, workshops, Discord, booking) without leaving the site.
+
+**Current site context:** The homepage already has **Discord** (Join Discord modal) and **Cal.com** (Book a call). A chatbot can answer FAQs and direct visitors to these—e.g. "Join our Discord for community" or "Book a call at cal.com/whynotproductions".
 
 **Options:**
 
@@ -31,7 +33,8 @@ Many tools offer a script you embed; they host the AI and the chat UI.
    - [Chatbase](https://www.chatbase.co/) – Train a bot on your content, embed.
    - [Botpress](https://botpress.com/) – Build flows or AI, embed or API.
    - [Tars](https://www.tars.io/) – Conversational bots, embed.
-2. **Create your bot** in their dashboard (e.g. upload your site or FAQ, set answers, or connect an AI).
+   - [Voiceflow](https://www.voiceflow.com/) – Design flows, embed or API.
+2. **Create your bot** in their dashboard (e.g. upload your site or FAQ, set answers, or connect an AI). Include in training: homepage content, courses, Discord link (`https://discord.com/invite/p74cGwrdPd`), Cal.com (`https://cal.com/whynotproductions`).
 3. **Get the embed snippet** (usually a `<script>` tag and sometimes a site ID).
 4. **Add the script to the site** so it loads on every page (e.g. in `Layout.astro` before `</body>`), and set any config (e.g. position, greeting).
 5. **Never put API keys in the script** if the provider gives you a public "website ID" – use that. If they require a secret key for AI, it must stay on the server (see Option B).
@@ -41,7 +44,7 @@ Many tools offer a script you embed; they host the AI and the chat UI.
 - **File:** `systems/frontend/src/layouts/Layout.astro`
 - **Place:** Inside `<body>`, after `<slot />`, before `</body>`.
 
-Example (placeholder – replace with real snippet from your provider):
+Example (placeholder – replace with your provider's snippet):
 
 ```html
 <body class="dots">
@@ -55,7 +58,7 @@ Use `is:inline` in Astro so the script is not processed and runs in the browser 
 
 ### Checklist (widget)
 
-- [ ] Choose provider and create bot (train on your pages / FAQ if supported).
+- [ ] Choose provider and create bot (train on homepage, courses, Discord, Cal.com if supported).
 - [ ] Get embed snippet; confirm no secret keys are exposed in the script.
 - [ ] Add snippet in `Layout.astro` (or a dedicated partial included in the layout).
 - [ ] Set `PUBLIC_*` or provider-specific env in Netlify only if the provider needs a non-secret site ID in the script.
@@ -72,7 +75,7 @@ You build a small chat UI (e.g. floating button + message list) and send message
 1. Visitor types a message in your chat UI.
 2. Frontend sends a **POST** to a Netlify Function (e.g. `/.netlify/functions/chat`).
 3. The function calls the AI API with:
-   - System prompt (e.g. "You are the assistant for WhyNot Productions. You help with …").
+   - System prompt (describe Zerwiz, WhyNot Productions, courses, Discord, Cal.com booking).
    - Conversation history (or last N messages).
    - User message.
 4. AI responds; function returns the response to the frontend.
@@ -82,10 +85,28 @@ You build a small chat UI (e.g. floating button + message list) and send message
 
 | Part | Location |
 |------|----------|
-| Chat UI (button, messages, input) | e.g. `systems/frontend/src/components/ChatWidget.astro` + client script (or small framework island). |
+| Chat UI (button, messages, input) | e.g. `systems/frontend/src/components/ChatWidget.astro` + client script (or framework island). |
 | API route (server) | `systems/frontend/netlify/functions/chat.ts` (or `chat.js`). |
-| Env (API key) | Netlify: Site → Environment variables. Local: `.env` (gitignored). |
-| Layout | Include the chat component in `Layout.astro` so it appears on all pages (or only selected ones). |
+| Env (API key) | Netlify: Site → Environment variables. Local: `systems/frontend/.env` (gitignored). |
+| Layout | Include the chat component in `Layout.astro` so it appears on all pages (or selected ones). |
+
+**Note:** Netlify's build base is `systems/frontend` (`netlify.toml`). Functions in `systems/frontend/netlify/functions/` are automatically detected.
+
+### System prompt example
+
+Include in your system prompt so the AI knows the context:
+
+```
+You are the assistant for WhyNot Productions, run by Zerwiz — developer, AI educator, and Cursor instructor.
+
+You help visitors with:
+- Information about courses, workshops, and AI/Cursor training
+- Directing them to join the Discord community: https://discord.com/invite/p74cGwrdPd
+- Booking a call: https://cal.com/whynotproductions
+- AI Dev Suite and tools: whynotproductions.netlify.app
+
+Be helpful, concise, and friendly. If someone wants to collaborate or book, point them to Cal.com. For community and updates, point to Discord.
+```
 
 ### Netlify Function example (Node)
 
@@ -93,7 +114,7 @@ Create **`systems/frontend/netlify/functions/chat.ts`** (or `.js`):
 
 - Read `OPENAI_API_KEY` (or `ANTHROPIC_API_KEY`) from `process.env`.
 - Parse POST body: `{ messages: [{ role, content }, ...] }`.
-- Call OpenAI `chat.completions.create` (or Anthropic equivalent) with a system prompt that describes you, courses, workshops, and booking (e.g. "Book at cal.com/whynotproductions").
+- Call OpenAI `chat.completions.create` (or Anthropic equivalent) with the system prompt above.
 - Return `{ reply: assistantMessage }` and set CORS headers so your frontend can call it.
 
 Important:
@@ -109,7 +130,7 @@ Important:
   - Uses **client-side JavaScript** (e.g. `<script>` in the component, or a small island with `client:load`) to:
     - POST user message to `/.netlify/functions/chat`.
     - Append user and assistant messages to the UI.
-- Style the panel to match your site (e.g. same card style, red accent). Keep it accessible (keyboard, focus, labels).
+- Style the panel to match your site (dark theme, red accent). Keep it accessible (keyboard, focus, labels).
 
 ### Env and security
 
@@ -119,7 +140,7 @@ Important:
 
 ### Checklist (custom)
 
-- [ ] Create Netlify Function that reads API key from env and calls AI API with a fixed system prompt.
+- [ ] Create Netlify Function that reads API key from env and calls AI API with the system prompt.
 - [ ] Implement CORS and optional rate limiting.
 - [ ] Build chat UI component; wire "Send" to POST and display replies.
 - [ ] Include chat component in `Layout.astro` (or chosen pages).
@@ -130,8 +151,8 @@ Important:
 
 ## 4. Recommendation for this project
 
-- **Quick win:** Use **Option A** (e.g. Crisp or Chatbase) – embed script, train bot on your homepage/FAQ, add snippet in `Layout.astro`. No backend or API keys to manage.
-- **Full control and your branding:** Use **Option B** – one Netlify Function + small chat component; system prompt can clearly describe Zerwiz, WhyNot Productions, courses, and Cal.com booking. Keep API key in Netlify env only.
+- **Quick win:** Use **Option A** (e.g. Crisp or Chatbase) – embed script, train bot on homepage/FAQ, include Discord and Cal.com in training, add snippet in `Layout.astro`. No backend or API keys to manage.
+- **Full control and your branding:** Use **Option B** – one Netlify Function + small chat component; system prompt clearly describes Zerwiz, WhyNot Productions, courses, Discord, and Cal.com booking. Keep API key in Netlify env only.
 
 ---
 

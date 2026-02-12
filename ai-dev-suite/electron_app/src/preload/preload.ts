@@ -44,6 +44,8 @@ contextBridge.exposeInMainWorld('api', {
   quitApp: () => ipcRenderer.invoke('app:quit'),
   selectFilesAndFolders: () => ipcRenderer.invoke('dialog:selectFilesAndFolders'),
   selectDirectory: () => ipcRenderer.invoke('dialog:selectDirectory'),
+  selectFile: (opts?: { title?: string; filters?: { name: string; extensions: string[] }[] }) =>
+    ipcRenderer.invoke('dialog:selectFile', opts),
   openConfigDirInFileManager: (dir: string) => ipcRenderer.invoke('settings:openConfigDirInFileManager', dir),
   getConfigDirSetting: () => ipcRenderer.invoke('settings:getConfigDir'),
   setConfigDirSetting: (dir: string) => ipcRenderer.invoke('settings:setConfigDir', dir),

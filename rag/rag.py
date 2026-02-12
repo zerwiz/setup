@@ -20,12 +20,16 @@ LOG_PATH = Path("~/.config/ai-dev-suite/rag.log").expanduser()
 # Chunking (Phase 2: recursive, 20% overlap)
 CHUNK_SIZE = 512
 CHUNK_OVERLAP = int(CHUNK_SIZE * 0.2)
+CHUNK_SIZE_TOKENS = 512
+CHUNK_OVERLAP_RATIO = 0.2
 SEPARATORS = ["\n\n", "\n", ". ", " "]
 
 # Retrieval
-TOP_K_RETRIEVE = 20  # Before rerank
-TOP_K_FINAL = 5      # After rerank / hybrid fusion
-HYBRID_ALPHA = 0.5   # 0=BM25 only, 1=vector only
+TOP_K_RETRIEVE = 20   # Before rerank
+TOP_K_RERANK = 5      # After cross-encoder rerank
+TOP_K_FINAL = 5       # Final docs to LLM
+HYBRID_ALPHA = 0.5    # 0=BM25 only, 1=vector only
+RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L6-v2"
 
 # System prompt (Phase 3) + guardrails (Section 6)
 SYSTEM_PROMPT = """You are a helpful assistant that answers only from the provided context.
@@ -106,10 +110,38 @@ def _split_md_by_sections(text: str, base_meta: dict) -> list[tuple[str, dict]]:
     return result if result else [(text, base_meta)]
 
 
-def _recursive_split(text: str, separators: list[str], chunk_size: int, overlap: int) -> list[str]:
-    """Recursive character splitter (structure-aware)."""
-    if len(text) <= chunk_size:
+def _token_count(text: str, encoding: str = "cl100k_base") -> int:
+    """Count tokens. Uses tiktoken if available else ~4 chars/token heuristic."""
+    try:
+        import tiktoken
+        enc = tiktoken.get_encoding(encoding)
+        return len(enc.encode(text))
+    except Exception:
+        return max(1, len(text) // 4)
+
+
+def _recursive_split(text: str, separators: list[str], chunk_size: int, overlap: int, use_tokens: bool = False) -> list[str]:
+    """Recursive splitter (structure-aware). chunk_size in chars or tokens when use_tokens=True."""
+    size_ok = (_token_count(text) <= chunk_size) if use_tokens else (len(text) <= chunk_size)
+    if size_ok:
         return [text] if text.strip() else []
+    def fits(a: str, b: str) -> bool:
+        combined = (a + b) if a else b
+        if use_tokens:
+            return _token_count(combined) <= chunk_size
+        return len(combined) <= chunk_size
+
+    def trim_tail(s: str, limit: int) -> str:
+        if use_tokens:
+            try:
+                import tiktoken
+                enc = tiktoken.get_encoding("cl100k_base")
+                toks = enc.encode(s)
+                return enc.decode(toks[-limit:]) if len(toks) > limit else s
+            except Exception:
+                return s[-limit * 4:] if len(s) > limit * 4 else s
+        return s[-limit:] if len(s) > limit else s
+
     sep = separators[0] if separators else ""
     if sep:
         parts = text.split(sep)
@@ -117,27 +149,86 @@ def _recursive_split(text: str, separators: list[str], chunk_size: int, overlap:
         current = ""
         for i, p in enumerate(parts):
             add = p if i == 0 else sep + p
-            if len(current) + len(add) <= chunk_size:
-                current += add
+            if fits(current, add):
+                current = (current + add) if current else add
             else:
-                if current:
+                if current.strip():
                     chunks.append(current.strip())
-                if len(add) > chunk_size and len(separators) > 1:
-                    sub = _recursive_split(add, separators[1:], chunk_size, overlap)
+                if use_tokens and _token_count(add) > chunk_size and len(separators) > 1:
+                    sub = _recursive_split(add, separators[1:], chunk_size, overlap, use_tokens=True)
                     chunks.extend(sub[:-1] if sub else [])
-                    current = sub[-1] if sub else add
+                    current = sub[-1] if sub else trim_tail(add, chunk_size - overlap)
+                elif not use_tokens and len(add) > chunk_size and len(separators) > 1:
+                    sub = _recursive_split(add, separators[1:], chunk_size, overlap, use_tokens=False)
+                    chunks.extend(sub[:-1] if sub else [])
+                    current = sub[-1] if sub else add[-chunk_size:]
                 else:
-                    current = add[-chunk_size:] if len(add) > chunk_size else add
+                    current = trim_tail(add, chunk_size - overlap) if (use_tokens and _token_count(add) > chunk_size - overlap) or (not use_tokens and len(add) > chunk_size - overlap) else add
         if current.strip():
             chunks.append(current.strip())
         return chunks
-    return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size - overlap)]
+    step = chunk_size - overlap
+    if use_tokens:
+        try:
+            import tiktoken
+            enc = tiktoken.get_encoding("cl100k_base")
+            toks = enc.encode(text)
+            return [enc.decode(toks[i:i + chunk_size]) for i in range(0, len(toks), step)]
+        except Exception:
+            return [text[i:i + chunk_size * 4] for i in range(0, len(text), step * 4)]
+    return [text[i:i + chunk_size] for i in range(0, len(text), step)]
 
 
-def chunk_text(text: str, source: str, file_type: str, page: int | None = None, section: str | None = None) -> list[dict]:
-    """Recursive chunking with metadata tags per RAG best practices."""
+def _semantic_split(text: str, chunk_size_tokens: int, overlap_ratio: float) -> list[str]:
+    """Semantic-style chunking: split by paragraphs first, merge until token limit. Preserves document structure."""
+    paras = [p.strip() for p in text.strip().split("\n\n") if p.strip()]
+    if not paras:
+        return [text.strip()] if text.strip() else []
+    overlap_tokens = int(chunk_size_tokens * overlap_ratio)
     chunks = []
-    raw_chunks = _recursive_split(text.strip(), SEPARATORS, CHUNK_SIZE, CHUNK_OVERLAP)
+    current = []
+    current_tokens = 0
+    for p in paras:
+        n = _token_count(p)
+        if current_tokens + n > chunk_size_tokens and current:
+            chunk_text = "\n\n".join(current).strip()
+            if chunk_text:
+                chunks.append(chunk_text)
+            overlap_paras = []
+            overlap_t = 0
+            for s in reversed(current):
+                overlap_t += _token_count(s)
+                overlap_paras.insert(0, s)
+                if overlap_t >= overlap_tokens:
+                    break
+            current = overlap_paras
+            current_tokens = overlap_t
+        current.append(p)
+        current_tokens += n
+    if current:
+        chunks.append("\n\n".join(current).strip())
+    return [c for c in chunks if c]
+
+
+def chunk_text(
+    text: str,
+    source: str,
+    file_type: str,
+    page: int | None = None,
+    section: str | None = None,
+    chunk_size: int | None = None,
+    chunk_overlap: int | None = None,
+    use_tokens: bool = False,
+    semantic: bool = False,
+) -> list[dict]:
+    """Recursive or semantic chunking with metadata tags per RAG best practices."""
+    chunks = []
+    size = chunk_size or (CHUNK_SIZE_TOKENS if use_tokens else CHUNK_SIZE)
+    overlap_val = chunk_overlap if chunk_overlap is not None else int(size * CHUNK_OVERLAP_RATIO)
+    if semantic:
+        raw_chunks = _semantic_split(text.strip(), size, CHUNK_OVERLAP_RATIO)
+    else:
+        raw_chunks = _recursive_split(text.strip(), SEPARATORS, size, overlap_val, use_tokens=use_tokens)
     for i, c in enumerate(raw_chunks):
         if not c.strip():
             continue
@@ -203,10 +294,26 @@ def reciprocal_rank_fusion(vector_ids: list, bm25_ids: list, k: int = 60) -> lis
         scores[doc_id] = scores.get(doc_id, 0) + 1 / (k + rank + 1)
     for rank, doc_id in enumerate(bm25_ids):
         scores[doc_id] = scores.get(doc_id, 0) + 1 / (k + rank + 1)
-    return sorted(scores.keys(), key=lambda i: scores[i], reverse=True)[:TOP_K_FINAL]
+    return sorted(scores.keys(), key=lambda i: scores[i], reverse=True)[:TOP_K_RETRIEVE]
 
 
-def retrieve_hybrid(coll, query: str, embed_model: str, where: dict | None) -> list[str]:
+def _rerank_cross_encoder(query: str, docs: list[str], top_k: int = TOP_K_RERANK) -> list[str]:
+    """Rerank docs with cross-encoder. Returns top_k by relevance."""
+    if not docs:
+        return []
+    try:
+        from sentence_transformers import CrossEncoder
+        model = CrossEncoder(RERANKER_MODEL)
+        pairs = [(query, d) for d in docs]
+        scores = model.predict(pairs)
+        ranked = sorted(zip(scores, docs), key=lambda x: x[0], reverse=True)
+        return [d for _, d in ranked[:top_k]]
+    except Exception as e:
+        log("rerank_fallback", {"error": str(e)})
+        return docs[:top_k]
+
+
+def retrieve_hybrid(coll, query: str, embed_model: str, where: dict | None, use_rerank: bool = True) -> list[str]:
     """Run hybrid (BM25 + vector) retrieval; return top documents."""
     query_emb = get_ollama_embedding(query, embed_model)
     q = coll.query(
@@ -224,7 +331,51 @@ def retrieve_hybrid(coll, query: str, embed_model: str, where: dict | None) -> l
     bm25_indices = bm25_search(all_docs, query, TOP_K_RETRIEVE) if all_docs else []
     bm25_ids = [all_ids[i] for i in bm25_indices]
     fused_ids = reciprocal_rank_fusion(vec_ids, bm25_ids)
-    return [id_to_doc[i] for i in fused_ids if i in id_to_doc]
+    candidates = [id_to_doc[i] for i in fused_ids if i in id_to_doc]
+    if use_rerank and len(candidates) > TOP_K_RERANK:
+        return _rerank_cross_encoder(query, candidates, TOP_K_RERANK)
+    return candidates[:TOP_K_FINAL]
+
+
+def retrieve_with_expansion(
+    coll, query: str, embed_model: str, where: dict | None, use_rerank: bool,
+    expand_query_fn=None, model: str = "llama3.2",
+) -> list[str]:
+    """Retrieve with optional query expansion. Expands query, retrieves per variant, fuses with RRF."""
+    if not expand_query_fn:
+        return retrieve_hybrid(coll, query, embed_model, where, use_rerank)
+    queries = expand_query(query, model, num_alternatives=2)
+    all_ranked = []
+    for q in queries:
+        docs = retrieve_hybrid(coll, q, embed_model, where, use_rerank=False)
+        all_ranked.append([(d, i) for i, d in enumerate(docs)])
+    if len(all_ranked) == 1:
+        return retrieve_hybrid(coll, query, embed_model, where, use_rerank)
+    doc_to_score = {}
+    for rank_list in all_ranked:
+        for doc, rank in rank_list:
+            doc_str = doc
+            doc_to_score[doc_str] = doc_to_score.get(doc_str, 0) + 1 / (60 + rank + 1)
+    merged = sorted(doc_to_score.keys(), key=lambda d: doc_to_score[d], reverse=True)[:TOP_K_RETRIEVE]
+    if use_rerank and len(merged) > TOP_K_RERANK:
+        return _rerank_cross_encoder(query, merged, TOP_K_RERANK)
+    return merged[:TOP_K_FINAL]
+
+
+def expand_query(query: str, model: str, num_alternatives: int = 2) -> list[str]:
+    """Use LLM to generate alternative phrasings for query expansion."""
+    try:
+        prompt = f"""Generate {num_alternatives} alternative phrasings of this search query. Each on a new line. Query:
+{query}
+
+Alternatives:"""
+        messages = [{"role": "user", "content": prompt}]
+        out = ollama_chat(messages, model)
+        lines = [line.strip() for line in out.strip().split("\n") if line.strip()]
+        alts = [q for q in lines[:num_alternatives] if len(q) > 5 and q.lower() != query.lower()]
+        return [query] + alts
+    except Exception:
+        return [query]
 
 
 def parse_citations(text: str) -> list[str]:
@@ -373,7 +524,26 @@ _cache: dict[str, tuple[str, float]] = {}
 CACHE_TTL = 300  # 5 min
 
 
+def _redis_client():
+    """Return Redis client if RAG_REDIS_URL is set, else None."""
+    url = os.environ.get("RAG_REDIS_URL", "").strip()
+    if not url:
+        return None
+    try:
+        import redis
+        return redis.from_url(url, decode_responses=True)
+    except Exception:
+        return None
+
+
 def cache_get(key: str) -> str | None:
+    r = _redis_client()
+    if r:
+        try:
+            v = r.get(f"rag:{key}")
+            return v
+        except Exception:
+            pass
     val = _cache.get(key)
     if val and time.time() - val[1] < CACHE_TTL:
         return val[0]
@@ -381,15 +551,41 @@ def cache_get(key: str) -> str | None:
 
 
 def cache_set(key: str, value: str):
+    r = _redis_client()
+    if r:
+        try:
+            r.setex(f"rag:{key}", CACHE_TTL, value)
+        except Exception:
+            pass
     _cache[key] = (value, time.time())
 
 
-# --- Logging ---
+# --- Logging & Alerting ---
+ALERT_LATENCY_MS = int(os.environ.get("RAG_ALERT_LATENCY_MS", "0"))
+ALERT_WEBHOOK = os.environ.get("RAG_ALERT_WEBHOOK", "").strip()
+
+
 def log(event: str, data: dict):
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     line = json.dumps({"ts": datetime.utcnow().isoformat(), "event": event, **data}) + "\n"
     with open(LOG_PATH, "a", encoding="utf-8") as f:
         f.write(line)
+    if ALERT_WEBHOOK:
+        latency = data.get("latency_total_ms") or data.get("latency_ms")
+        if ALERT_LATENCY_MS and latency and float(latency) > ALERT_LATENCY_MS:
+            _send_alert("high_latency", {"event": event, "latency_ms": latency, **data})
+        if event.endswith("_error") or "error" in event.lower():
+            _send_alert("error", {"event": event, **data})
+
+
+def _send_alert(typ: str, payload: dict):
+    if not ALERT_WEBHOOK:
+        return
+    try:
+        import requests
+        requests.post(ALERT_WEBHOOK, json={"type": typ, **payload}, timeout=5)
+    except Exception:
+        pass
 
 
 # --- Incremental indexing ---
@@ -425,6 +621,11 @@ def main():
     p.add_argument("--web", action="store_true", help="Include web search results in query (for research)")
     p.add_argument("--context-only", action="store_true", help="Output raw web context only (no Ollama); for API integration")
     p.add_argument("--eval-file", help="Eval JSONL: {question, expected_answer} per line")
+    p.add_argument("--no-rerank", action="store_true", help="Disable cross-encoder reranking (use RRF only)")
+    p.add_argument("--chunk-tokens", type=int, default=0, help="Chunk size in tokens (256-512). 0=use chars")
+    p.add_argument("--chunk-strategy", choices=["recursive", "semantic"], default="recursive", help="Chunking strategy")
+    p.add_argument("--expand-query", action="store_true", help="Expand query with LLM alternatives for better recall")
+    p.add_argument("--eval-ares", action="store_true", help="Use ARES for eval (pip install ares-ai)")
     args = p.parse_args()
 
     index_dir = Path(args.index_dir).expanduser()
@@ -460,13 +661,27 @@ def main():
         if not to_index:
             print("Nothing to index.")
             sys.exit(0)
+        use_tokens = args.chunk_tokens > 0
+        chunk_size = args.chunk_tokens if use_tokens else CHUNK_SIZE
+        chunk_overlap = int(chunk_size * CHUNK_OVERLAP_RATIO)
+        semantic = args.chunk_strategy == "semantic"
         all_chunks = []
         for path in to_index:
             try:
                 parts = load_document(path)
                 n = 0
                 for text, meta in parts:
-                    c = chunk_text(text, meta["source"], meta["file_type"], meta.get("page"), meta.get("section"))
+                    c = chunk_text(
+                        text,
+                        meta["source"],
+                        meta["file_type"],
+                        meta.get("page"),
+                        meta.get("section"),
+                        chunk_size=chunk_size,
+                        chunk_overlap=chunk_overlap,
+                        use_tokens=use_tokens,
+                        semantic=semantic,
+                    )
                     all_chunks.extend(c)
                     n += len(c)
                 manifest[str(path)] = file_hash(path)
@@ -521,7 +736,11 @@ def main():
                     where["file_type"] = args.filter_type
                 where = where if where else None
                 t0 = time.time()
-                final_docs = retrieve_hybrid(coll, query, args.embed_model, where)
+                use_rerank = not args.no_rerank
+                if args.expand_query:
+                    final_docs = retrieve_with_expansion(coll, query, args.embed_model, where, use_rerank, expand_query_fn=expand_query, model=args.model)
+                else:
+                    final_docs = retrieve_hybrid(coll, query, args.embed_model, where, use_rerank)
                 doc_context = "\n\n".join(f"[doc {i+1}] {d}" for i, d in enumerate(final_docs)) if final_docs else ""
         except Exception:
             pass
@@ -576,7 +795,11 @@ def main():
                 if args.filter_type:
                     where["file_type"] = args.filter_type
                 where = where if where else None
-                final_docs = retrieve_hybrid(coll, query, args.embed_model, where)
+                use_rerank = not args.no_rerank
+                if args.expand_query:
+                    final_docs = retrieve_with_expansion(coll, query, args.embed_model, where, use_rerank, expand_query_fn=expand_query, model=args.model)
+                else:
+                    final_docs = retrieve_hybrid(coll, query, args.embed_model, where, use_rerank)
                 if final_docs:
                     context_parts.append("Documents:\n" + "\n\n".join(f"[doc {i+1}] {d}" for i, d in enumerate(final_docs)))
         except Exception:
@@ -610,6 +833,7 @@ def main():
 
     # --- EVAL ---
     elif args.command == "eval":
+        client = _chroma_client()
         eval_path = Path(args.eval_file) if args.eval_file else Path("eval.jsonl")
         if not eval_path.exists():
             print(f"Eval file not found: {eval_path}")
@@ -634,8 +858,13 @@ def main():
             q = row.get("question", row.get("q", ""))
             if not q:
                 continue
-            final_docs = retrieve_hybrid(coll, q, args.embed_model, where)
+            use_rerank = not args.no_rerank
+            if args.expand_query:
+                final_docs = retrieve_with_expansion(coll, q, args.embed_model, where, use_rerank, expand_query_fn=expand_query, model=args.model)
+            else:
+                final_docs = retrieve_hybrid(coll, q, args.embed_model, where, use_rerank)
             context = "\n\n".join(final_docs) if final_docs else ""
+            eval_context = context
             messages = [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": f"Context:\n---\n{context}\n---\n\nQuestion: {q}"},
@@ -654,7 +883,7 @@ def main():
                 metrics["citations_count"] = len(cites)
                 results.append({
                     "question": q, "answer": ans, "expected": expected,
-                    "citations": cites, "metrics": metrics,
+                    "citations": cites, "metrics": metrics, "context": eval_context,
                 })
             except Exception as e:
                 results.append({"question": q, "error": str(e)})
@@ -662,6 +891,18 @@ def main():
         out.write_text(json.dumps(results, indent=2))
         n_ok = sum(1 for r in results if "error" not in r)
         print(f"Eval complete. {len(results)} runs ({n_ok} ok). Results: {out}")
+        if args.eval_ares:
+            ares_tsv = index_dir / "eval_ares_unlabeled.tsv"
+            lines = ["query\tcontext\tanswer"]
+            for r in results:
+                if "error" not in r:
+                    q = r.get("question", "").replace("\t", " ").replace("\n", " ")
+                    ctx = (r.get("context", "") or "").replace("\t", " ").replace("\n", " ")
+                    ans = (r.get("answer", "") or "").replace("\t", " ").replace("\n", " ")
+                    lines.append(f"{q}\t{ctx}\t{ans}")
+            ares_tsv.write_text("\n".join(lines), encoding="utf-8")
+            print(f"ARES-compatible TSV (for ares-ai): {ares_tsv}")
+            print("  pip install ares-ai  # then use ARES docs for full eval")
 
 
 if __name__ == "__main__":

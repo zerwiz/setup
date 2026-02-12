@@ -61,11 +61,19 @@ This will:
 
 ## Scripts
 
-| Command       | Purpose                              |
-|---------------|--------------------------------------|
-| `npm run dev` | Run Vite + Electron in dev mode      |
-| `npm run build` | Build for production               |
-| `npm run build:app` | Package with electron-builder |
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Run Vite + Electron in dev mode |
+| `npm run build` | Build for production |
+| `npm run build:app` | Package for current platform |
+| `npm run build:mac` | Package for macOS (dmg, zip) |
+| `npm run build:win` | Package for Windows (nsis) |
+| `npm run build:linux` | Package for Linux (AppImage, deb) |
+
+## Packaging & auto-updates
+
+- **Packaging:** `elixir_tui` is bundled as `extraResources`; the app spawns it on launch. Requires **Elixir** + **Mix** on the host.
+- **Auto-updates:** electron-updater checks GitHub Releases on startup (production builds only). Publish releases to `zerwiz/WhyNotProductionsHomepage` for updates to work.
 
 ## Structure
 

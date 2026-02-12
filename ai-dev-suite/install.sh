@@ -19,12 +19,13 @@ else
   TTY=0
 fi
 
-# Install commands for each tool
+# Install commands for each tool (aligned with TUI: Zed, OpenCode, Ollama, LM Studio, OpenClaw, Workshop)
 INSTALL_ZED='curl -fsSL https://zed.dev/install.sh | sh'
-INSTALL_LM='curl -fsSL -L https://lmstudio.ai/install.sh | sh'
+INSTALL_OPENCODE='curl -fsSL https://opencode.ai/install | bash'
 INSTALL_OLLAMA='curl -fsSL https://ollama.com/install.sh | sh'
-INSTALL_PINOKIO='curl -fsSL https://pinokio.computer/install.sh | sh'
-INSTALL_CLAW='curl -fsSL https://clawcode.ai/install.sh | sh'
+INSTALL_LM='curl -fsSL https://lmstudio.ai/install.sh | bash'
+INSTALL_OPENCLAW='curl -fsSL https://openclaw.ai/install.sh | bash'
+INSTALL_WORKSHOP='curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/setup.sh | bash'
 
 section() {
   printf "\n${BAR} ${WHITE}%s${RESET}\n" "$1"
@@ -58,25 +59,30 @@ tool "1. Zed" \
   "$INSTALL_ZED" \
   "https://zed.dev"
 
-tool "2. LM Studio" \
-  "Local LLM runner. Discover and download models." \
-  "$INSTALL_LM" \
-  "https://lmstudio.ai"
+tool "2. OpenCode" \
+  "AI code editor. Agents that write and run code." \
+  "$INSTALL_OPENCODE" \
+  "https://opencode.ai"
 
 tool "3. Ollama" \
   "Run large language models locally. Simple setup." \
   "$INSTALL_OLLAMA" \
   "https://ollama.com"
 
-tool "4. Pinokio" \
-  "Browser for AI applications. Automated installation for local models." \
-  "$INSTALL_PINOKIO" \
-  "https://pinokio.computer"
+tool "4. LM Studio" \
+  "Local LLM runner. Discover and download models." \
+  "$INSTALL_LM" \
+  "https://lmstudio.ai"
 
-tool "5. ClawCode" \
-  "Terminal based code editor. Optimized for AI workflows." \
-  "$INSTALL_CLAW" \
-  "https://clawcode.ai"
+tool "5. OpenClaw" \
+  "AI assistant that actually does things. Any OS. The lobster way." \
+  "$INSTALL_OPENCLAW" \
+  "https://openclaw.ai"
+
+tool "6. Workshop Setup" \
+  "Run this to install local development tools." \
+  "$INSTALL_WORKSHOP" \
+  "https://github.com/zerwiz/setup"
 
 # Model Libraries
 section "Model Libraries"
@@ -103,12 +109,13 @@ card "BMAD" \
 # Install if argument passed: curl ... | bash -s ollama
 do_install() {
   case "$1" in
-    zed|1)     echo ""; echo "Installing Zed...";      eval "$INSTALL_ZED" ;;
-    lm|2)      echo ""; echo "Installing LM Studio..."; eval "$INSTALL_LM" ;;
-    ollama|3)  echo ""; echo "Installing Ollama...";   eval "$INSTALL_OLLAMA" ;;
-    pinokio|4) echo ""; echo "Installing Pinokio...";  eval "$INSTALL_PINOKIO" ;;
-    claw|5)    echo ""; echo "Installing ClawCode..."; eval "$INSTALL_CLAW" ;;
-    *)         echo ""; echo "Unknown: $1. Use: ollama, zed, lm, pinokio, claw" ;;
+    zed|1)         echo ""; echo "Installing Zed...";           eval "$INSTALL_ZED" ;;
+    opencode|2)    echo ""; echo "Installing OpenCode...";       eval "$INSTALL_OPENCODE" ;;
+    ollama|3)      echo ""; echo "Installing Ollama...";         eval "$INSTALL_OLLAMA" ;;
+    lm|4)          echo ""; echo "Installing LM Studio...";      eval "$INSTALL_LM" ;;
+    openclaw|5)    echo ""; echo "Installing OpenClaw...";      eval "$INSTALL_OPENCLAW" ;;
+    workshop|6)    echo ""; echo "Running Workshop Setup...";    eval "$INSTALL_WORKSHOP" ;;
+    *)             echo ""; echo "Unknown: $1. Use: zed, opencode, ollama, lm, openclaw, workshop" ;;
   esac
 }
 if [[ -n "${1:-}" ]]; then

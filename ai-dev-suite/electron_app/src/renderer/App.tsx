@@ -31,7 +31,7 @@ export default function App() {
                 { to: '/memory', label: 'Memory' },
                 { to: '/tools', label: 'Tools' },
                 { to: '/settings', label: 'Settings' },
-                { to: '/server', label: 'Server ↻', title: 'llama.cpp server integration (coming later)' },
+                { to: '/server', label: 'Server ↻', title: 'llama.cpp server start/stop and config' },
               ].map(({ to, label, title }) => (
                 <NavLink
                   key={to}

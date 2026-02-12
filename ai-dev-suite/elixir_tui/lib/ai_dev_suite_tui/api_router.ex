@@ -21,11 +21,68 @@ defmodule OptionsPlug do
   end
 end
 
+defmodule RateLimitPlug do
+  @moduledoc "Per-IP rate limiting for /api/research. Set RAG_RATE_LIMIT_PER_MIN env (default 60)."
+  import Plug.Conn
+
+  def init(opts), do: opts
+
+  def call(conn, _opts) do
+    if conn.request_path == "/api/research" and conn.method == "POST" do
+      check_rate_limit(conn)
+    else
+      conn
+    end
+  end
+
+  defp check_rate_limit(conn) do
+    limit = parse_limit(System.get_env("RAG_RATE_LIMIT_PER_MIN", "60"))
+    if limit <= 0 do
+      conn
+    else
+      key = conn.remote_ip |> :inet.ntoa() |> to_string()
+      now_ms = System.system_time(:millisecond)
+      window_ms = 60_000
+      tab = :rag_rate_limit
+      if :ets.whereis(tab) == :undefined do
+        :ets.new(tab, [:named_table, :set, :public])
+      end
+      ts = case :ets.lookup(tab, key) do
+        [{^key, list}] -> prune_and_count(list, now_ms - window_ms)
+        [] -> []
+      end
+      count = length(ts)
+      if count >= limit do
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(429, Jason.encode!(%{error: "Rate limit exceeded. Try again later."}))
+        |> halt()
+      else
+        :ets.insert(tab, {key, [now_ms | ts]})
+        conn
+      end
+    end
+  end
+
+  defp prune_and_count(list, cutoff) do
+    list |> Enum.filter(&(&1 > cutoff)) |> Enum.sort(:desc)
+  end
+
+  defp parse_limit(s) when is_binary(s) do
+    case Integer.parse(s) do
+      {n, _} -> max(0, n)
+      _ -> 60
+    end
+  end
+  defp parse_limit(_), do: 60
+end
+
 defmodule AiDevSuiteTui.ApiRouter do
   use Plug.Router
   require Logger
 
   plug(Plug.Logger)
+  plug(RateLimitPlug)
   plug(:match)
   plug(Plug.Parsers,
     parsers: [{:multipart, length: 50_000_000}, :json],
@@ -301,6 +358,49 @@ defmodule AiDevSuiteTui.ApiRouter do
 
   get "/api/config" do
     send_json(conn, 200, %{config_dir: AiDevSuiteTui.api_config_dir()})
+  end
+
+  get "/api/preferences" do
+    prefs = AiDevSuiteTui.api_preferences_read()
+    send_json(conn, 200, prefs)
+  end
+
+  put "/api/preferences" do
+    case AiDevSuiteTui.api_preferences_write(conn.body_params || %{}) do
+      {:ok, prefs} -> send_json(conn, 200, prefs)
+      {:error, err} -> send_json(conn, 500, %{error: to_string(err)})
+    end
+  end
+
+  # llama.cpp server management
+  get "/api/server/status" do
+    status = AiDevSuiteTui.LlamaCppServer.status()
+    send_json(conn, 200, status)
+  end
+
+  get "/api/server/config" do
+    cfg = AiDevSuiteTui.LlamaCppServer.get_config()
+    send_json(conn, 200, cfg)
+  end
+
+  put "/api/server/config" do
+    params = conn.body_params || %{}
+    case AiDevSuiteTui.LlamaCppServer.put_config(params) do
+      {:ok, cfg} -> send_json(conn, 200, cfg)
+      {:error, err} -> send_json(conn, 500, %{error: to_string(err)})
+    end
+  end
+
+  post "/api/server/start" do
+    case AiDevSuiteTui.LlamaCppServer.start_server() do
+      {:ok, info} -> send_json(conn, 200, info)
+      {:error, reason} -> send_json(conn, 500, %{error: to_string(reason)})
+    end
+  end
+
+  post "/api/server/stop" do
+    AiDevSuiteTui.LlamaCppServer.stop_server()
+    send_json(conn, 200, %{ok: true})
   end
 
   get "/api/debug/behavior" do

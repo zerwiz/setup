@@ -45,8 +45,11 @@ curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/setup.sh | bash
 
 | Doc | Description |
 |-----|-------------|
+| [Structure](./STRUCTURE.md) | Tools folder structure – ai-dev-suite, rag, doc, deployment |
+| [INSTALL_COMMANDS](./INSTALL_COMMANDS.md) | Terminal install commands; shareable: whynotproductions.netlify.app/install |
 | [TODO](./TODO.md) | Action items from FUNCTIONS and RAG Best Practices |
 | [RAG](./rag/README.md) | Setup, usage, options |
+| [RAG Functions](./rag/FUNCTIONS.md) | Full reference: commands, functions, constants |
 | [RAG Best Practices](./rag/RAG_BEST_PRACTICES.md) | How to build production RAG (chunking, embeddings, retrieval) |
 | [AI Chatbot Integration](./AI_CHATBOT_INTEGRATION.md) | Add chatbot to site (widget vs custom + Netlify Function) |
 
@@ -59,6 +62,7 @@ curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/setup.sh | bash
 | [Functions](./ai-dev-suite/FUNCTIONS.md) | Full command/module reference (chat, drive, memory, research) |
 | [Storage](./ai-dev-suite/STORAGE.md) | Where memory, drive, and RAG data are stored |
 | [llama.cpp](./ai-dev-suite/LLAMACPP.md) | llama.cpp vs Ollama; Server screen placeholder |
+| [Zed & OpenCode ACP](./ai-dev-suite/ZED_OPENCODE_ACP.md) | Full implementation: connect AI Dev Suite to Zed/OpenCode via Agent Client Protocol |
 | [Planning](./ai-dev-suite/PLANNING.md) | Roadmap and implementation status |
 | [UI Planning](./ai-dev-suite/UI_PLANNING.md) | Desktop app architecture (Electron + React + Elixir) |
 | [TUI quick start](./ai-dev-suite/elixir-tui.md) | Interactive menu quick start |

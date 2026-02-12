@@ -6,7 +6,8 @@
     "rootDir": "src",
     "strict": true,
     "esModuleInterop": true,
-    "composite": true
+    "composite": true,
+    "skipLibCheck": true
   },
   "include": ["src/main/**/*", "src/preload/**/*"]
 }

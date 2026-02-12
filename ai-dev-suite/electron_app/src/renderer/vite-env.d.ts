@@ -12,6 +12,7 @@ interface Window {
     quitApp?: () => Promise<void>;
     selectFilesAndFolders?: () => Promise<{ canceled?: boolean; paths: string[] }>;
     selectDirectory?: () => Promise<{ canceled?: boolean; path: string }>;
+    selectFile?: (opts?: { title?: string; filters?: { name: string; extensions: string[] }[] }) => Promise<{ canceled?: boolean; path: string }>;
     openConfigDirInFileManager?: (dir: string) => Promise<{ ok: boolean; error?: string }>;
     getConfigDirSetting?: () => Promise<string>;
     setConfigDirSetting?: (dir: string) => Promise<{ ok: boolean }>;

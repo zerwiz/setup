@@ -1,0 +1,40 @@
+---
+description: Tools-specific rules – AI Dev Suite, RAG, push workflow, portability
+globs: ["**/*"]
+alwaysApply: false
+---
+
+# Tools – AI Dev Suite, RAG
+
+## Not deployed to Netlify
+
+`tools/` is never pushed to Netlify. Tools are delivered via curl from zerwiz/setup.
+
+## Documentation
+
+- All tool docs live in **`doc/`**.
+- Each tool dir keeps a brief README pointing to `doc/<name>/`.
+- Structure: `doc/ai-dev-suite/`, `doc/rag/`.
+- **When changing a tool:** Update the relevant doc. Add new docs when adding features (e.g. STORAGE.md, FUNCTIONS.md).
+
+## Extra programs (AI Dev Suite, Workshop Setup)
+
+- **Location:** tools/ contents go to zerwiz/setup root; `../docs/for-zerwiz-setup/` has setup.sh, run-tui.sh, install-full.sh.
+- **Deployed from:** zerwiz/setup (not this repo's Netlify).
+- **Curl commands** must point to zerwiz/setup only.
+- **Push:** Run `bash ../scripts/push-to-setup.sh`. If you change install-full.sh, edit `../docs/for-zerwiz-setup/ai-dev-suite/` before pushing.
+
+## AI Dev Suite – system portability
+
+The install must work on any user machine:
+
+- **Install script:** Support `AI_DEV_SUITE_DIR`, `XDG_DATA_HOME`, `AI_DEV_SUITE_BIN_DIR`. Use `$HOME` or `$USERPROFILE` (Windows).
+- **Elixir config:** Use `HOME` or `USERPROFILE` for memory/drive.
+- **Paths:** Install dir (code) ≠ config dir (user data). Config: `~/.config/ai-dev-suite`. Never hardcode paths.
+
+## Adding a new tool
+
+1. Create `tools/<name>/` with `install.sh` and README
+2. Add doc in `doc/<name>/`
+3. Run `bash ../scripts/push-to-setup.sh`
+4. Add terminal block on homepage if curl-able

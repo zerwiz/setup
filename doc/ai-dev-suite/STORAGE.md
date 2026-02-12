@@ -9,6 +9,7 @@ All AI Dev Suite and RAG data is stored under your user config directory or app 
 | `memory.md` | Chat (system prompt) | `/remember`, Settings, API PUT | Manual notes, system info, preferences |
 | `conversation_memory.md` | Chat (system prompt) | `/bye` (auto-extract) | Conversation facts saved on exit |
 | `behavior.md` | Chat (system prompt) | `/behavior`, Settings, API PUT | Tone, style, behavior instructions |
+| `preferences.json` | API, Chat | API PUT (on model change) | Preferred model for new chats |
 | `drive/` | Chat (KB index) | Drive add, upload | User documents (default knowledge base) |
 | `drive/.converted/` | Chat | RAG convert | Converted text from PDF, DOCX, etc. |
 | `knowledge-bases/<name>/` | Chat (KB index) | Drive add per KB | Custom KB documents |

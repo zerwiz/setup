@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
+import { autoUpdater } from 'electron-updater';
 import path from 'path';
 import os from 'os';
 import { spawn, ChildProcess } from 'child_process';
@@ -73,7 +74,9 @@ function saveSettings(settings: { configDir?: string }): void {
 
 function startElixirAPI(): Promise<void> {
   return new Promise((resolve) => {
-    const rootDir = path.resolve(__dirname, '../../../elixir_tui');
+    const rootDir = app.isPackaged
+      ? path.join(process.resourcesPath, 'elixir_tui')
+      : path.resolve(__dirname, '../../../elixir_tui');
     if (!existsSync(path.join(rootDir, 'mix.exs'))) {
       console.warn('Elixir project not found at', rootDir, '- start API manually: mix run -e "AiDevSuiteTui.API.start()"');
       resolve();
@@ -132,6 +135,10 @@ app.whenReady().then(async () => {
   await startElixirAPI();
   createWindow();
 
+  if (!process.env.NODE_ENV || process.env.NODE_ENV === 'production') {
+    autoUpdater.checkForUpdatesAndNotify().catch(() => {});
+  }
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
@@ -174,6 +181,21 @@ ipcMain.handle('dialog:selectDirectory', async () => {
   });
   return { canceled, path: filePaths?.[0] ?? '' };
 });
+
+ipcMain.handle(
+  'dialog:selectFile',
+  async (_ev: unknown, opts?: { title?: string; filters?: { name: string; extensions: string[] }[] }) => {
+    const win = BrowserWindow.getFocusedWindow();
+    if (!win) return { canceled: true, path: '' };
+    const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+      title: opts?.title ?? 'Select file',
+      properties: ['openFile'],
+      filters: opts?.filters,
+      buttonLabel: 'Select',
+    });
+    return { canceled, path: filePaths?.[0] ?? '' };
+  }
+);
 
 ipcMain.handle('settings:getConfigDir', () => loadSettings().configDir ?? '');
 

@@ -354,11 +354,25 @@ defmodule AiDevSuiteTui do
     type_tag = ext_to_type_tag(ext)
     conv_dir = Path.join(kb_dir, ".converted")
     case extract_text(file_path, ext) do
-      {:ok, text} when text != "" ->
+      {:ok, {:html_sections, sections}} ->
+        File.mkdir_p!(conv_dir)
+        sections
+        |> Enum.with_index()
+        |> Enum.each(fn {{section_title, body}, idx} ->
+          base = String.replace(rel, "/", "__")
+          converted_name = "#{base}__s#{idx}.txt"
+          converted_path = Path.join(conv_dir, converted_name)
+          section_part = if section_title != "", do: " [section: #{section_title}]", else: ""
+          type_part = "[type: #{type_tag}]"
+          header = "[file: #{rel}]#{section_part} #{type_part} [source: #{Path.basename(file_path)}]\n---\n"
+          File.write!(converted_path, header <> body)
+        end)
+      {:ok, text} when is_binary(text) and text != "" ->
         File.mkdir_p!(conv_dir)
         converted_name = String.replace(rel, "/", "__") <> ".txt"
         converted_path = Path.join(conv_dir, converted_name)
-        header = "[file: #{rel}] [type: #{type_tag}] [source: #{Path.basename(file_path)}]\n---\n"
+        type_part = build_type_tag(type_tag, text)
+        header = "[file: #{rel}] #{type_part} [source: #{Path.basename(file_path)}]\n---\n"
         File.write!(converted_path, header <> text)
       _ -> :ok
     end
@@ -742,15 +756,36 @@ defmodule AiDevSuiteTui do
     rel = if String.starts_with?(file_path, drive), do: String.trim_leading(String.replace_prefix(file_path, drive, ""), "/"), else: Path.basename(file_path)
     type_tag = ext_to_type_tag(ext)
     case extract_text(file_path, ext) do
-      {:ok, text} when text != "" ->
+      {:ok, {:html_sections, sections}} ->
+        File.mkdir_p!(converted_dir())
+        sections
+        |> Enum.with_index()
+        |> Enum.each(fn {{section_title, body}, idx} ->
+          base = String.replace(rel, "/", "__")
+          converted_name = "#{base}__s#{idx}.txt"
+          converted_path = Path.join(converted_dir(), converted_name)
+          section_part = if section_title != "", do: " [section: #{section_title}]", else: ""
+          type_part = "[type: #{type_tag}]"
+          header = "[file: #{rel}]#{section_part} #{type_part} [source: #{Path.basename(file_path)}]\n---\n"
+          File.write!(converted_path, header <> body)
+        end)
+      {:ok, text} when is_binary(text) and text != "" ->
         File.mkdir_p!(converted_dir())
         converted_name = String.replace(rel, "/", "__") <> ".txt"
         converted_path = Path.join(converted_dir(), converted_name)
-        # Add metadata tags so AI can map content to source (see RAG best practices)
-        header = "[file: #{rel}] [type: #{type_tag}] [source: #{Path.basename(file_path)}]\n---\n"
+        type_part = build_type_tag(type_tag, text)
+        header = "[file: #{rel}] #{type_part} [source: #{Path.basename(file_path)}]\n---\n"
         File.write!(converted_path, header <> text)
       _ ->
         :ok
+    end
+  end
+
+  defp build_type_tag(base_type, text) do
+    if content_looks_like_table?(text) and base_type != "table" do
+      "[type: #{base_type}] [type: table]"
+    else
+      "[type: #{base_type}]"
     end
   end
 
@@ -761,8 +796,89 @@ defmodule AiDevSuiteTui do
       ".txt" -> "txt"
       ".md" -> "markdown"
       ".markdown" -> "markdown"
+      ".csv" -> "table"
+      ".html" -> "html"
+      ".htm" -> "html"
       _ -> "document"
     end
+  end
+
+  # Detect table content for [type: table] tagging (RAG best practices)
+  defp content_looks_like_table?(text) when is_binary(text) and byte_size(text) > 0 do
+    lines =
+      text
+      |> String.split("\n")
+      |> Enum.map(&String.trim/1)
+      |> Enum.reject(&(&1 == ""))
+
+    if length(lines) < 2 do
+      false
+    else
+      # Markdown table: | col | col | (2+ pipes per line)
+      markdown_table? =
+        Enum.all?(lines, fn line -> count_char(line, "|") >= 2 end)
+
+      # CSV/TSV-like: same delimiter count per line
+      delim_counts = Enum.map(lines, fn line ->
+        {count_char(line, ","), count_char(line, ";"), count_char(line, "\t")}
+      end)
+      {c, s, t} = hd(delim_counts)
+      csv_like? = (c >= 1 or s >= 1 or t >= 1) and
+        Enum.all?(delim_counts, fn {cc, ss, tt} -> cc == c and ss == s and tt == t end)
+
+      markdown_table? or csv_like?
+    end
+  end
+
+  defp content_looks_like_table?(_), do: false
+
+  defp count_char(str, char) when is_binary(str) and is_binary(char) do
+    parts = String.split(str, char, parts: :infinity)
+    max(0, length(parts) - 1)
+  end
+
+  # Split HTML at h1/h2/h3 boundaries; return [{section_title, section_text}]
+  defp extract_html_sections(html) when is_binary(html) do
+    heading_re = ~r/<h([123])(?:\s[^>]*)?>([^<]*)<\/h\1>/iu
+    parts = Regex.split(heading_re, html, include_captures: true)
+    # parts alternates: [text_before, "1", "Title", text_after_h1, "2", "Title2", ...]
+    sections = parse_html_split_parts(parts, [])
+    Enum.filter(sections, fn {_title, body} -> String.trim(body) != "" end)
+  end
+
+  defp parse_html_split_parts([], acc), do: Enum.reverse(acc)
+
+  # Level+title pair (captured); next is section body until next heading
+  defp parse_html_split_parts([level, title | rest], acc) when level in ["1", "2", "3"] do
+    {content_parts, remaining} = take_until_next_heading(rest, [])
+    body = content_parts |> Enum.join() |> strip_html_tags() |> String.trim()
+    parse_html_split_parts(remaining, [{String.trim(title), body} | acc])
+  end
+
+  # Text segment (content before or between headings)
+  defp parse_html_split_parts([content | rest], acc) when is_binary(content) do
+    body = strip_html_tags(content) |> String.trim()
+    new_acc = if body != "", do: [{"", body} | acc], else: acc
+    parse_html_split_parts(rest, new_acc)
+  end
+
+  defp take_until_next_heading([], collected), do: {Enum.reverse(collected), []}
+
+  defp take_until_next_heading([part | rest], collected) when is_binary(part) do
+    take_until_next_heading(rest, [part | collected])
+  end
+
+  defp take_until_next_heading([_level, _title | _] = rest, collected) do
+    {Enum.reverse(collected), rest}
+  end
+
+  defp strip_html_tags(html) when is_binary(html) do
+    html
+    |> String.replace(~r/<script[^>]*>[\s\S]*?<\/script>/iu, "")
+    |> String.replace(~r/<style[^>]*>[\s\S]*?<\/style>/iu, "")
+    |> String.replace(~r/<[^>]+>/u, " ")
+    |> String.replace(~r/\s+/u, " ")
+    |> String.trim()
   end
 
   defp extract_text(path, ext) do
@@ -784,6 +900,19 @@ defmodule AiDevSuiteTui do
       ext when ext in [".txt", ".md", ".markdown", ".rst", ".tex"] ->
         case File.read(path) do
           {:ok, content} -> {:ok, content}
+          _ -> :skip
+        end
+      ext when ext in [".html", ".htm"] ->
+        case File.read(path) do
+          {:ok, content} when is_binary(content) and byte_size(content) < 500_000 ->
+            if String.valid?(content) do
+              case extract_html_sections(content) do
+                [] -> :skip
+                sections -> {:ok, {:html_sections, sections}}
+              end
+            else
+              :skip
+            end
           _ -> :skip
         end
       _ ->
@@ -1387,6 +1516,37 @@ defmodule AiDevSuiteTui do
   def api_behavior_content, do: load_behavior()
   def api_research(query), do: run_research(query)
   def api_config_dir, do: config_dir()
+
+  def api_preferences_read do
+    path = Path.join(config_dir(), "preferences.json")
+    unless File.exists?(config_dir()), do: File.mkdir_p!(config_dir())
+    if File.exists?(path) do
+      case File.read(path) do
+        {:ok, content} ->
+          case Jason.decode(content) do
+            {:ok, %{"preferred_model" => m}} when is_binary(m) and m != "" -> %{preferred_model: m}
+            {:ok, %{"preferredModel" => m}} when is_binary(m) and m != "" -> %{preferred_model: m}
+            _ -> %{}
+          end
+        _ -> %{}
+      end
+    else
+      %{}
+    end
+  end
+
+  def api_preferences_write(attrs) when is_map(attrs) do
+    path = Path.join(config_dir(), "preferences.json")
+    unless File.exists?(config_dir()), do: File.mkdir_p!(config_dir())
+    model = attrs["preferred_model"] || attrs["preferredModel"]
+    current = api_preferences_read()
+    merged = if is_binary(model) and model != "", do: Map.put(current, :preferred_model, model), else: current
+    json = Jason.encode!(%{preferred_model: Map.get(merged, :preferred_model)})
+    case File.write(path, json) do
+      :ok -> {:ok, merged}
+      {:error, err} -> {:error, err}
+    end
+  end
 
   def api_debug_behavior do
     path = behavior_file_path()

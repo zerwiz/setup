@@ -321,6 +321,14 @@ export async function getConfig(): Promise<{ config_dir: string }> {
   return (await api.get('/api/config')) as { config_dir: string };
 }
 
+export type Preferences = { preferred_model?: string };
+export async function getPreferences(): Promise<Preferences> {
+  return (await api.get('/api/preferences')) as Preferences;
+}
+export async function savePreferences(prefs: Preferences): Promise<Preferences> {
+  return (await api.put('/api/preferences', prefs)) as Preferences;
+}
+
 export async function saveConversationFacts(
   model: string,
   messages: { role: string; content: string }[]
@@ -330,4 +338,46 @@ export async function saveConversationFacts(
     ok?: boolean;
     error?: string;
   };
+}
+
+// llama.cpp server management
+export type ServerConfig = {
+  model_path?: string;
+  port?: number;
+  server_path?: string;
+};
+
+export type ServerStatus = {
+  running: boolean;
+  port?: number;
+  model_path?: string;
+  server_path?: string;
+};
+
+export async function getServerStatus(): Promise<ServerStatus & { error?: string }> {
+  return (await api.get('/api/server/status')) as ServerStatus & { error?: string };
+}
+
+export async function getServerConfig(): Promise<ServerConfig & { error?: string }> {
+  return (await api.get('/api/server/config')) as ServerConfig & { error?: string };
+}
+
+export async function putServerConfig(cfg: ServerConfig): Promise<ServerConfig & { error?: string }> {
+  return (await (api as { put: (p: string, b: unknown) => Promise<unknown> }).put(
+    '/api/server/config',
+    cfg
+  )) as ServerConfig & { error?: string };
+}
+
+export async function startServer(): Promise<{ ok?: boolean; port?: number; running?: boolean; error?: string }> {
+  return (await api.post('/api/server/start', {})) as {
+    ok?: boolean;
+    port?: number;
+    running?: boolean;
+    error?: string;
+  };
+}
+
+export async function stopServer(): Promise<{ ok?: boolean; error?: string }> {
+  return (await api.post('/api/server/stop', {})) as { ok?: boolean; error?: string };
 }
