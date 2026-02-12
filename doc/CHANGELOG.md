@@ -9,4 +9,5 @@ Format: list entries under a date/version heading; use present tense (“Add …
 
 ## [Unreleased]
 
+- Update README About section with expanded bio: Zerwiz identity, education, AI Dev Suite, WhyNot Productions, UpsideDown Production, principles, network, contact.
 - Add CHANGELOG. zerwiz/setup is the main repo for tools; develop here.

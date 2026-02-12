@@ -1,12 +1,27 @@
 # WhyNot Productions Tools
 
-**Welcome.** I'm Zerwiz — developer, AI educator, Cursor instructor. Visit my [homepage](https://whynotproductions.netlify.app) to learn more.
+## About me
 
-These are my terminal and desktop tools: AI Dev Suite, RAG, and more. Delivered via `curl | bash` from the site.
+I'm **Zerwiz** — Lars-Josef Lindbom. Developer. AI educator. Producer.
+
+| Area | Description |
+|------|--------------|
+| **Education & Integration** | I teach Cursor and AI-powered development. I host technical courses. I help businesses integrate AI. |
+| **AI Dev Suite** | Local-first tools: chat, memory, and RAG research. Runs on your machine. One curl install. Works offline with Ollama. |
+| **WhyNot Productions** | Creative base for projects and strategy. Roots in extreme sports, music, and festivals. Underground culture. Strategy and production. |
+| **UpsideDown Production** | Collaborative AI tool. Engine for festivals. Creative partnerships. Cross-border movement. Creating new formats. |
+
+**Principles:** Movement over ego. Collaboration over competition. Action over perfection.
+
+**Network & Reach:** Based in Sweden. Network from the Nordics to the U.S. Fast implementation. Purposeful results.
+
+**Contact:** [Visit my homepage](https://whynotproductions.netlify.app/) for workshops, custom development, or AI integration.
+
+---
+
+These are my terminal and desktop tools: AI Dev Suite, RAG, and more. Delivered via `curl | bash`.
 
 Want to collaborate? **[Join Discord](https://discord.com/invite/p74cGwrdPd)** · **[Book a call](https://cal.com/whynotproductions/)**
-
-**WhyNot Productions** — Developer tools, AI workshops, and Cursor training. Built for developers who want to ship faster with AI.
 
 **What can the AI Dev Suite do?** Here's the simple version:
 
