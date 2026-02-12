@@ -2,15 +2,9 @@ import { useState } from 'react';
 import { useChat } from '../contexts/ChatContext';
 import { saveConversationFacts } from '../api';
 
-declare global {
-  interface Window {
-    api?: { quitApp?: () => Promise<void> };
-  }
-}
-
 export default function QuitButton() {
   const [saving, setSaving] = useState(false);
-  const { chats, activeChat, saveNow } = useChat();
+  const { activeChat, saveNow } = useChat();
 
   if (typeof window === 'undefined' || !window.api || typeof window.api.quitApp !== 'function') return null;
 
