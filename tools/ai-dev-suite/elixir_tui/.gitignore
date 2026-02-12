@@ -1,0 +1,7 @@
+/_build/
+/deps/
+/.elixir_ls/
+*.ez
+/doc/
+/cover/
+/ai_dev_suite_tui

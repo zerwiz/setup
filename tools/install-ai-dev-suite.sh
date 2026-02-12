@@ -10,7 +10,7 @@ set -e
 # Resolve HOME (Windows Git Bash / WSL: use USERPROFILE if HOME unset)
 [[ -z "$HOME" && -n "$USERPROFILE" ]] && export HOME="$USERPROFILE"
 
-REPO="${AI_DEV_SUITE_REPO:-https://github.com/zerwiz/setup}"
+REPO="${AI_DEV_SUITE_REPO:-https://github.com/zerwiz/WhyNotProductionsHomepage}"
 BRANCH="${AI_DEV_SUITE_BRANCH:-main}"
 
 # Install location: XDG_DATA_HOME on Linux, or override
@@ -63,12 +63,7 @@ trap 'rm -rf "$TMP"' EXIT
 
 cd "$TMP"
 curl -fsSL "${REPO}/archive/refs/heads/${BRANCH}.tar.gz" | tar xz
-# Extract dir: setup-main (zerwiz/setup) or WhyNotProductionsHomepage-main
-if [[ -d "setup-main" ]]; then
-  cd setup-main
-else
-  cd "$(find . -maxdepth 1 -type d -name '*-main' | head -1)"
-fi
+cd "WhyNotProductionsHomepage-${BRANCH}"
 
 if [[ ! -d tools/ai-dev-suite ]]; then
   echo -e "${RED}Unexpected repo structure. Aborting.${RESET}"

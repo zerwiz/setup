@@ -20,6 +20,6 @@ trap 'rm -rf "$TMP"' EXIT
 cd "$TMP"
 curl -fsSL "https://github.com/zerwiz/setup/archive/refs/heads/main.zip" -o repo.zip
 unzip -q repo.zip
-cd setup-main/elixir_tui
+cd setup-main/tools/ai-dev-suite/elixir_tui
 chmod +x start.sh
 exec ./start.sh
