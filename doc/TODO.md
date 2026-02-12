@@ -8,7 +8,7 @@ Action items derived from [AI Dev Suite FUNCTIONS](./ai-dev-suite/FUNCTIONS.md) 
 
 ### High priority
 
-- [ ] **Stream chat responses** – Chat is non-streaming (curl with `stream: false`). Add streaming for better UX.
+- [x] **Stream chat responses** – ✅ Done in Electron app (Elixir `/api/chat/stream`, NDJSON, token-by-token).
 - [ ] **Align install.sh with TUI** – install.sh has Zed, LM, Ollama, Pinokio, ClawCode (1–5). TUI has Zed, OpenCode, Ollama, LM Studio, OpenClaw, Workshop (1–6). Unify or document the difference.
 
 ### Medium priority

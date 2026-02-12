@@ -4,7 +4,7 @@ defmodule CORSPlug do
   def call(conn, _opts) do
     conn
     |> put_resp_header("access-control-allow-origin", "*")
-    |> put_resp_header("access-control-allow-methods", "GET, POST, OPTIONS")
+    |> put_resp_header("access-control-allow-methods", "GET, POST, PUT, DELETE, OPTIONS")
     |> put_resp_header("access-control-allow-headers", "Content-Type")
   end
 end
@@ -89,15 +89,54 @@ defmodule AiDevSuiteTui.ApiRouter do
   post "/api/chat" do
     model = conn.body_params["model"] || "llama3.2:latest"
     messages = conn.body_params["messages"] || []
+    kbs = conn.body_params["knowledge_bases"] || conn.body_params["knowledgeBases"]
     kb = conn.body_params["knowledge_base"] || conn.body_params["knowledgeBase"]
-    system = AiDevSuiteTui.api_build_system_prompt(kb)
+    system = cond do
+      is_list(kbs) and kbs != [] -> AiDevSuiteTui.api_build_system_prompt(kbs)
+      is_binary(kb) and kb != "" -> AiDevSuiteTui.api_build_system_prompt(kb)
+      true -> AiDevSuiteTui.api_build_system_prompt("default")
+    end
     all = [%{"role" => "system", "content" => system} | Enum.map(messages, &stringify_keys/1)]
-    case AiDevSuiteTui.api_chat_send(model, all) do
+    opts = conn.body_params["options"] || []
+    case AiDevSuiteTui.api_chat_send(model, all, opts) do
       {:ok, %{"message" => %{"content" => content}}} ->
         send_json(conn, 200, %{reply: content})
       {:error, err} ->
         send_json(conn, 500, %{error: to_string(err)})
     end
+  end
+
+  post "/api/chat/stream" do
+    model = conn.body_params["model"] || "llama3.2:latest"
+    messages = conn.body_params["messages"] || []
+    kbs = conn.body_params["knowledge_bases"] || conn.body_params["knowledgeBases"]
+    kb = conn.body_params["knowledge_base"] || conn.body_params["knowledgeBase"]
+    system = cond do
+      is_list(kbs) and kbs != [] -> AiDevSuiteTui.api_build_system_prompt(kbs)
+      is_binary(kb) and kb != "" -> AiDevSuiteTui.api_build_system_prompt(kb)
+      true -> AiDevSuiteTui.api_build_system_prompt("default")
+    end
+    all = [%{"role" => "system", "content" => system} | Enum.map(messages, &stringify_keys/1)]
+    opts = conn.body_params["options"] || []
+    internet_enabled = conn.body_params["internet_enabled"] == true
+    conn = conn
+      |> put_resp_content_type("application/x-ndjson; charset=utf-8")
+      |> send_chunked(200)
+    parent = self()
+    callback = fn
+      :delta, content ->
+        send(parent, {:stream_chunk, Jason.encode!(%{delta: content}) <> "\n"})
+      :done, _ ->
+        send(parent, {:stream_chunk, Jason.encode!(%{done: true}) <> "\n"})
+        send(parent, :stream_done)
+      :error, msg ->
+        send(parent, {:stream_chunk, Jason.encode!(%{error: msg}) <> "\n"})
+        send(parent, :stream_done)
+    end
+    spawn(fn ->
+      AiDevSuiteTui.api_chat_send_stream(model, all, callback, opts, internet_enabled)
+    end)
+    stream_chat_loop(conn)
   end
 
   get "/api/memory" do
@@ -123,6 +162,22 @@ defmodule AiDevSuiteTui.ApiRouter do
     send_json(conn, 200, %{ok: true})
   end
 
+  put "/api/memory/manual" do
+    content = conn.body_params["content"] || conn.body_params["text"] || ""
+    case AiDevSuiteTui.api_write_memory_manual(content) do
+      {:ok, _} -> send_json(conn, 200, %{ok: true})
+      {:error, err} -> send_json(conn, 500, %{error: to_string(err)})
+    end
+  end
+
+  put "/api/memory/conv" do
+    content = conn.body_params["content"] || conn.body_params["text"] || ""
+    case AiDevSuiteTui.api_write_memory_conv(content) do
+      {:ok, _} -> send_json(conn, 200, %{ok: true})
+      {:error, err} -> send_json(conn, 500, %{error: to_string(err)})
+    end
+  end
+
   post "/api/bye" do
     model = conn.body_params["model"] || "llama3.2:latest"
     messages = conn.body_params["messages"] || []
@@ -138,6 +193,14 @@ defmodule AiDevSuiteTui.ApiRouter do
     text = conn.body_params["text"] || ""
     AiDevSuiteTui.api_behavior_append(text)
     send_json(conn, 200, %{ok: true})
+  end
+
+  put "/api/behavior" do
+    content = conn.body_params["content"] || conn.body_params["text"] || ""
+    case AiDevSuiteTui.api_write_behavior(content) do
+      {:ok, _} -> send_json(conn, 200, %{ok: true})
+      {:error, err} -> send_json(conn, 500, %{error: to_string(err)})
+    end
   end
 
   get "/api/drive" do
@@ -167,8 +230,43 @@ defmodule AiDevSuiteTui.ApiRouter do
 
   get "/api/knowledge-bases/:name/contents" do
     name = conn.path_params["name"]
-    lines = AiDevSuiteTui.list_knowledge_base_contents(name)
-    send_json(conn, 200, %{items: lines})
+    items = AiDevSuiteTui.list_knowledge_base_contents_with_paths(name) |> Enum.map(fn {path, display} -> %{path: path, display: display} end)
+    send_json(conn, 200, %{items: items})
+  end
+
+  post "/api/knowledge-bases/:name/delete" do
+    name = conn.path_params["name"]
+    path = conn.body_params["path"] || conn.body_params["rel_path"] || ""
+    case AiDevSuiteTui.delete_from_knowledge_base(name, path) do
+      {:ok, msg} -> send_json(conn, 200, %{ok: true, message: msg})
+      {:error, err} -> send_json(conn, 400, %{error: to_string(err)})
+    end
+  end
+
+  post "/api/knowledge-bases/:name/delete-batch" do
+    name = conn.path_params["name"]
+    paths = conn.body_params["paths"] || conn.body_params["path"] || []
+    paths = if is_binary(paths), do: [paths], else: paths
+    case AiDevSuiteTui.delete_batch_from_knowledge_base(name, paths) do
+      {:ok, msg} -> send_json(conn, 200, %{ok: true, message: msg})
+      {:error, err} -> send_json(conn, 400, %{error: to_string(err)})
+    end
+  end
+
+  post "/api/knowledge-bases/:name/delete-all" do
+    name = conn.path_params["name"]
+    case AiDevSuiteTui.delete_all_from_knowledge_base(name) do
+      {:ok, msg} -> send_json(conn, 200, %{ok: true, message: msg})
+      {:error, err} -> send_json(conn, 400, %{error: to_string(err)})
+    end
+  end
+
+  delete "/api/knowledge-bases/:name" do
+    name = conn.path_params["name"]
+    case AiDevSuiteTui.delete_knowledge_base(name) do
+      {:ok, msg} -> send_json(conn, 200, %{ok: true, message: msg})
+      {:error, err} -> send_json(conn, 400, %{error: to_string(err)})
+    end
   end
 
   post "/api/knowledge-bases/:name/add" do
@@ -205,6 +303,10 @@ defmodule AiDevSuiteTui.ApiRouter do
     send_json(conn, 200, %{config_dir: AiDevSuiteTui.api_config_dir()})
   end
 
+  get "/api/debug/behavior" do
+    send_json(conn, 200, AiDevSuiteTui.api_debug_behavior())
+  end
+
   get "/" do
     html = """
     <!DOCTYPE html>
@@ -232,6 +334,20 @@ defmodule AiDevSuiteTui.ApiRouter do
     case Integer.parse(s) do {i, _} -> i; _ -> nil end
   end
   defp parse_index(_), do: nil
+
+  defp stream_chat_loop(conn) do
+    receive do
+      {:stream_chunk, data} ->
+        case Plug.Conn.chunk(conn, data) do
+          {:ok, new_conn} -> stream_chat_loop(new_conn)
+          {:error, _} -> conn
+        end
+      :stream_done ->
+        conn
+    after
+      320_000 -> conn
+    end
+  end
 
   defp stringify_keys(%{role: r, content: c}), do: %{"role" => to_string(r), "content" => to_string(c)}
   defp stringify_keys(%{"role" => r, "content" => c}), do: %{"role" => to_string(r), "content" => to_string(c)}

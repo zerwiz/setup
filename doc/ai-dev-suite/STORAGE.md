@@ -1,6 +1,31 @@
 # AI Dev Suite – Storage Locations
 
-All AI Dev Suite and RAG data is stored under your user config directory.
+All AI Dev Suite and RAG data is stored under your user config directory or app data paths.
+
+## All files the system stores and reads
+
+| File / path | Read by | Written by | Purpose |
+|-------------|---------|-----------|---------|
+| `memory.md` | Chat (system prompt) | `/remember`, Settings, API PUT | Manual notes, system info, preferences |
+| `conversation_memory.md` | Chat (system prompt) | `/bye` (auto-extract) | Conversation facts saved on exit |
+| `behavior.md` | Chat (system prompt) | `/behavior`, Settings, API PUT | Tone, style, behavior instructions |
+| `drive/` | Chat (KB index) | Drive add, upload | User documents (default knowledge base) |
+| `drive/.converted/` | Chat | RAG convert | Converted text from PDF, DOCX, etc. |
+| `knowledge-bases/<name>/` | Chat (KB index) | Drive add per KB | Custom KB documents |
+| `knowledge-bases/<name>/.converted/` | Chat | RAG convert | Converted docs per KB |
+| `rag_index/` | RAG query/research | `rag index` | Chroma vector index |
+| `rag_index/.manifest.json` | RAG incremental | `rag index` | File hash manifest |
+| `rag_cache/` | RAG query/research | RAG | Query cache (5 min TTL) |
+| `rag.log` | — | RAG | Event log |
+| `settings.json` (Electron) | Electron main | Settings Save | Config dir override |
+| `localStorage` (Electron) | Chat UI | Chat UI | Chats, model presets |
+
+**Paths:**
+- Base for config items: `~/.config/ai-dev-suite/` (or override in Settings).
+- Electron `settings.json`: `{userData}/settings.json` (e.g. `~/.config/ai-dev-suite-electron/` on Linux).
+- Electron localStorage keys: `zerwiz-ai-dev-suite-chats`, `zerwiz-ai-dev-suite-model-presets`.
+
+---
 
 ## Base directory
 
@@ -10,17 +35,17 @@ All AI Dev Suite and RAG data is stored under your user config directory.
 
 On Linux/macOS this resolves to `/home/<user>/.config/ai-dev-suite/` or `/Users/<user>/.config/ai-dev-suite/`.
 
-`$HOME` is used when available; otherwise `~` is used.
+`$HOME` is used when available; otherwise `~` is used. Override with Settings → Config directory (stored in Electron `userData/settings.json`).
 
 ---
 
-## Memory files (AI Dev Suite TUI chat)
+## Memory files (AI Dev Suite chat)
 
 | File | Purpose |
 |------|---------|
-| `~/.config/ai-dev-suite/memory.md` | Manual notes added via `/remember`. Each entry is tagged with `model:` and timestamp. |
+| `~/.config/ai-dev-suite/memory.md` | Manual notes added via `/remember` or Settings → Edit. Each entry tagged with `model:` and timestamp. |
 | `~/.config/ai-dev-suite/conversation_memory.md` | Auto-extracted facts when you type `bye`. Also tagged with `model:` and timestamp. |
-| `~/.config/ai-dev-suite/behavior.md` | Behavior instructions (tone, style). Use `/behavior` to read or add. |
+| `~/.config/ai-dev-suite/behavior.md` | Behavior instructions (tone, style). Use `/behavior` to read or add, or Settings → Edit. |
 
 **Format (memory.md, conversation_memory.md):**
 ```
@@ -79,7 +104,18 @@ model: llama3.2
 
 ---
 
+## AI chat and memory
+
+The chat includes `memory.md` and `conversation_memory.md` in the system prompt. The model is instructed to use this content when answering relevant questions (e.g. "what system do I have", hardware, OS, preferences).
+
+**If the AI doesn't seem to use memory:**
+1. Ensure memory.md exists and has content: Settings → memory.md → Edit.
+2. Check the config directory (Settings) matches where the API runs. Restart the app after changing it.
+3. Default path: `~/.config/ai-dev-suite/memory.md`.
+
+---
+
 ## Customizing paths
 
-- **AI Dev Suite:** Paths are fixed in the Elixir app. Use symlinks if you need a different location.
+- **AI Dev Suite:** Use Settings → Config directory to change the base path. Restart to apply.
 - **RAG:** Use `--index-dir` to override the Chroma index path when indexing or querying.

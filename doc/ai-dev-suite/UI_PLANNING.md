@@ -147,8 +147,10 @@ tools/ai-dev-suite/
 
 ### 4. Drive
 
-- File tree or list
-- [Add folder/file] button
+- Knowledge base selector + Create KB
+- Path input for file/folder/URL + [Add to KB] button
+- [Browse files & folders] button (Electron) – system file dialog to pick local files/folders
+- File tree or list of contents
 - Converted status per file
 
 ### 5. Memory & Behavior

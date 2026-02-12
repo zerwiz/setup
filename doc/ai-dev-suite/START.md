@@ -4,6 +4,19 @@ Works on **macOS, Linux, and Windows** (with Git Bash or WSL). Install location 
 
 ---
 
+## What the system needs
+
+| Requirement | Purpose |
+|-------------|---------|
+| **localhost:41434** | The Elixir API listens here. The app (Electron, Vite, browser) connects to it. Start the API first or let the Electron app spawn it. |
+| **Ollama** (optional) | For Chat: runs models locally. Start with `ollama serve` or use Start Ollama in the app. |
+| **Python 3** + pip | For RAG/web research (Internet mode). Installs `duckduckgo-search`, `requests`, `trafilatura` on startup. |
+| **Jina API key** (optional) | For higher rate limits when fetching URLs in Internet mode. Set `JINA_API_KEY` when starting the API (e.g. `JINA_API_KEY=your_key ./start-ai-dev-suite-api.sh`). Get a key at [jina.ai](https://jina.ai/). |
+
+**localhost:** Both the API and the UI must be able to reach each other. The API binds to `0.0.0.0` or `127.0.0.1` depending on setup. Use `http://localhost:41434` from the same machine.
+
+---
+
 ## Install (curl one-liner)
 
 Install to `~/.local/share/ai-dev-suite` and create launchers in `~/bin`:
@@ -48,6 +61,8 @@ If you have the WhyNotProductions Homepage repo cloned:
 | `./start-ai-dev-suite-web.sh` | API + Vite → http://localhost:5174 |
 | `./start-ai-dev-suite-electron.sh` | Electron desktop app |
 | `./start-ai-dev-suite-tui.sh` | TUI (terminal menu) |
+
+**On startup**, all scripts run `ensure-rag-deps.sh` to install RAG/web research deps (duckduckgo-search, trafilatura, etc.) for Internet mode in Chat.
 
 ```bash
 cd ~/CodeP/WhyNotProductions\ Homepage/tools

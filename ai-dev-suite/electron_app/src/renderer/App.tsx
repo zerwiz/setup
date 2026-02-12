@@ -6,6 +6,7 @@ import Chat from './screens/Chat';
 import Drive from './screens/Drive';
 import Memory from './screens/Memory';
 import Settings from './screens/Settings';
+import Server from './screens/Server';
 import OllamaStatus from './components/OllamaStatus';
 import QuitButton from './components/QuitButton';
 
@@ -22,19 +23,20 @@ export default function App() {
             </h1>
             <div className="flex items-center gap-4">
               <OllamaStatus />
-              <QuitButton />
               <nav className="flex gap-1">
               {[
                 { to: '/', label: 'Home' },
-                { to: '/tools', label: 'Tools' },
                 { to: '/chat', label: 'Chat' },
                 { to: '/drive', label: 'Drive' },
                 { to: '/memory', label: 'Memory' },
+                { to: '/tools', label: 'Tools' },
                 { to: '/settings', label: 'Settings' },
-              ].map(({ to, label }) => (
+                { to: '/server', label: 'Server ↻', title: 'llama.cpp server integration (coming later)' },
+              ].map(({ to, label, title }) => (
                 <NavLink
                   key={to}
                   to={to}
+                  title={title}
                   className={({ isActive }) =>
                     `px-3 py-2 rounded text-sm ${isActive ? 'bg-whynot-accent/20 text-whynot-accent' : 'text-whynot-muted hover:text-whynot-body'}`
                   }
@@ -43,6 +45,7 @@ export default function App() {
                 </NavLink>
               ))}
               </nav>
+              <QuitButton />
             </div>
           </div>
         </header>
@@ -55,6 +58,7 @@ export default function App() {
             <Route path="/drive" element={<Drive />} />
             <Route path="/memory" element={<Memory />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/server" element={<Server />} />
           </Routes>
         </main>
       </div>

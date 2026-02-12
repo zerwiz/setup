@@ -42,11 +42,22 @@ contextBridge.exposeInMainWorld('api', {
   base: API_BASE,
   fetch: apiFetch,
   quitApp: () => ipcRenderer.invoke('app:quit'),
+  selectFilesAndFolders: () => ipcRenderer.invoke('dialog:selectFilesAndFolders'),
+  selectDirectory: () => ipcRenderer.invoke('dialog:selectDirectory'),
+  openConfigDirInFileManager: (dir: string) => ipcRenderer.invoke('settings:openConfigDirInFileManager', dir),
+  getConfigDirSetting: () => ipcRenderer.invoke('settings:getConfigDir'),
+  setConfigDirSetting: (dir: string) => ipcRenderer.invoke('settings:setConfigDir', dir),
   get(path: string) {
     return apiFetch(path);
   },
   post(path: string, body: unknown, options?: { timeout?: number }) {
     return apiFetch(path, { method: 'POST', body: JSON.stringify(body), ...options });
+  },
+  put(path: string, body: unknown, options?: { timeout?: number }) {
+    return apiFetch(path, { method: 'PUT', body: JSON.stringify(body), ...options });
+  },
+  delete(path: string) {
+    return apiFetch(path, { method: 'DELETE' });
   },
   uploadFile(path: string, file: File) {
     const formData = new FormData();

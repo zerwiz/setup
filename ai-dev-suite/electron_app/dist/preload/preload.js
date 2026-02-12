@@ -44,11 +44,22 @@ electron_1.contextBridge.exposeInMainWorld('api', {
     base: API_BASE,
     fetch: apiFetch,
     quitApp: () => electron_1.ipcRenderer.invoke('app:quit'),
+    selectFilesAndFolders: () => electron_1.ipcRenderer.invoke('dialog:selectFilesAndFolders'),
+    selectDirectory: () => electron_1.ipcRenderer.invoke('dialog:selectDirectory'),
+    openConfigDirInFileManager: (dir) => electron_1.ipcRenderer.invoke('settings:openConfigDirInFileManager', dir),
+    getConfigDirSetting: () => electron_1.ipcRenderer.invoke('settings:getConfigDir'),
+    setConfigDirSetting: (dir) => electron_1.ipcRenderer.invoke('settings:setConfigDir', dir),
     get(path) {
         return apiFetch(path);
     },
     post(path, body, options) {
         return apiFetch(path, { method: 'POST', body: JSON.stringify(body), ...options });
+    },
+    put(path, body, options) {
+        return apiFetch(path, { method: 'PUT', body: JSON.stringify(body), ...options });
+    },
+    delete(path) {
+        return apiFetch(path, { method: 'DELETE' });
     },
     uploadFile(path, file) {
         const formData = new FormData();

@@ -264,9 +264,38 @@ def web_search(query: str, max_results: int = WEB_SNIPPET_MAX) -> list[dict]:
         return []
 
 
-def fetch_url_text(url: str) -> str | None:
-    """Fetch URL and extract main text content."""
+JINA_READER_BASE = "https://r.jina.ai/"
+
+
+def _fetch_via_jina(url: str) -> str | None:
+    """Fetch URL via Jina Reader for cleaner, LLM-friendly content."""
     import requests
+    jina_url = JINA_READER_BASE + url
+    try:
+        r = requests.get(
+            jina_url,
+            timeout=WEB_FETCH_TIMEOUT,
+            headers={"User-Agent": "RAG-Research/1.0", "Accept": "text/markdown"},
+        )
+        r.raise_for_status()
+        text = r.text
+        if text and len(text.strip()) > 100:
+            return text[:WEB_FETCH_MAX_CHARS]
+        return None
+    except Exception as e:
+        log("fetch_jina_error", {"url": url[:80], "error": str(e)})
+        return None
+
+
+def fetch_url_text(url: str, prefer_jina: bool | None = None) -> str | None:
+    """Fetch URL and extract main text content. Uses Jina Reader when available for cleaner output."""
+    if prefer_jina is None:
+        prefer_jina = os.environ.get("RAG_USE_JINA", "true").lower() in ("1", "true", "yes")
+    import requests
+    if prefer_jina:
+        text = _fetch_via_jina(url)
+        if text:
+            return text
     try:
         r = requests.get(url, timeout=WEB_FETCH_TIMEOUT, headers={"User-Agent": "RAG-Research/1.0"})
         r.raise_for_status()
@@ -289,13 +318,34 @@ def fetch_url_text(url: str) -> str | None:
         return None
 
 
+URL_RE = re.compile(r"https?://[^\s\)\]\"']+", re.I)
+
+
+def _extract_urls(text: str) -> list[str]:
+    """Extract http/https URLs from text."""
+    return list(dict.fromkeys(URL_RE.findall(text)))  # unique, order preserved
+
+
 def build_web_context(query: str) -> str:
     """Search web and optionally fetch top URLs; return formatted context string."""
-    results = web_search(query, max_results=WEB_SNIPPET_MAX)
-    if not results:
-        return ""
     parts = []
     seen_urls = set()
+
+    # 1. If query contains URLs, fetch them directly (user-provided URLs get priority)
+    for url in _extract_urls(query):
+        from urllib.parse import urlparse
+        url = url.rstrip(".,;:!?)")
+        if url not in seen_urls:
+            seen_urls.add(url)
+            text = fetch_url_text(url)
+            title = urlparse(url).netloc or url
+            if text and len(text) > 50:
+                parts.append((url, title, text[:4000]))
+            elif text:
+                parts.append((url, title, text))
+
+    # 2. DuckDuckGo search for additional context
+    results = web_search(query, max_results=WEB_SNIPPET_MAX)
     for i, r in enumerate(results):
         href = r.get("href", "").strip()
         title = r.get("title", "").strip()
@@ -312,6 +362,7 @@ def build_web_context(query: str) -> str:
             body = r.get("body", "").strip()
         if body:
             parts.append((href, title, body))
+
     return "\n\n---\n\n".join(
         f"[{i}] [url: {href}] [title: {title}]\n{body}" for i, (href, title, body) in enumerate(parts, 1)
     ) if parts else ""
@@ -372,19 +423,24 @@ def main():
     p.add_argument("--filter-type", help="Metadata filter: file type")
     p.add_argument("--citations", action="store_true", help="Print extracted citations after answer")
     p.add_argument("--web", action="store_true", help="Include web search results in query (for research)")
+    p.add_argument("--context-only", action="store_true", help="Output raw web context only (no Ollama); for API integration")
     p.add_argument("--eval-file", help="Eval JSONL: {question, expected_answer} per line")
     args = p.parse_args()
 
     index_dir = Path(args.index_dir).expanduser()
     index_dir.mkdir(parents=True, exist_ok=True)
 
-    import chromadb
-    from chromadb.config import Settings
+    # ChromaDB only needed for index/query/eval; research can run web-only without it
+    def _chroma_client():
+        import chromadb
+        from chromadb.config import Settings
+        return chromadb.PersistentClient(path=str(index_dir), settings=Settings(anonymized_telemetry=False))
 
-    client = chromadb.PersistentClient(path=str(index_dir), settings=Settings(anonymized_telemetry=False))
+    client = None
 
     # --- INDEX ---
     if args.command == "index":
+        client = _chroma_client()
         if not args.paths:
             print("Usage: rag index <file.pdf> [file2.docx ...] [--incremental]")
             sys.exit(1)
@@ -444,6 +500,7 @@ def main():
 
     # --- QUERY ---
     elif args.command == "query":
+        client = _chroma_client()
         query = " ".join(args.paths) if args.paths else input("Query: ").strip()
         if not query:
             sys.exit(1)
@@ -510,6 +567,7 @@ def main():
                 sys.exit(0)
         context_parts = []
         try:
+            client = _chroma_client()
             coll = client.get_or_create_collection("rag_docs", metadata={"hnsw:space": "cosine"})
             if coll.count() > 0:
                 where = {}
@@ -523,7 +581,8 @@ def main():
                     context_parts.append("Documents:\n" + "\n\n".join(f"[doc {i+1}] {d}" for i, d in enumerate(final_docs)))
         except Exception:
             pass
-        print("  Searching web...", file=sys.stderr)
+        if not args.context_only:
+            print("  Searching web...", file=sys.stderr)
         web_context = build_web_context(query)
         if web_context:
             context_parts.append("Web search results:\n" + web_context)
@@ -531,15 +590,19 @@ def main():
             print("No web results found. Check your internet connection.")
             sys.exit(1)
         full_context = "\n\n---\n\n".join(context_parts)
-        messages = [
-            {"role": "system", "content": SYSTEM_PROMPT_WEB},
-            {"role": "user", "content": f"Context:\n---\n{full_context}\n---\n\nQuestion: {query}"},
-        ]
-        answer = ollama_chat(messages, args.model)
-        log("research", {"query": query[:100]})
-        if not args.no_cache:
-            cache_set(cache_key, answer)
-        print(answer)
+        if args.context_only:
+            log("research", {"query": query[:100], "context_only": True})
+            print(full_context)
+        else:
+            messages = [
+                {"role": "system", "content": SYSTEM_PROMPT_WEB},
+                {"role": "user", "content": f"Context:\n---\n{full_context}\n---\n\nQuestion: {query}"},
+            ]
+            answer = ollama_chat(messages, args.model)
+            log("research", {"query": query[:100]})
+            if not args.no_cache:
+                cache_set(cache_key, answer)
+            print(answer)
         if args.citations:
             cites = parse_citations(answer)
             if cites:

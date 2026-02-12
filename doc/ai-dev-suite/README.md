@@ -6,7 +6,7 @@ Terminal and desktop tools for AI development resources, install commands, and O
 
 ## Purpose
 
-- **Electron app** – Desktop GUI: Home, Tools, Chat, Drive, Memory, Settings. Quit button saves workspace and all chats.
+- **Electron app** – Desktop GUI: Home, Chat, Drive, Memory, Tools, Settings, Server ↻, Quit. Quit button saves workspace and all chats.
 - **Elixir TUI** – Interactive terminal: install tools, chat with Ollama, slash commands (`/memory`, `/remember`, `/drive`, `/research`, `/bye`)
 - **Install script** – Installation commands for Zed, LM Studio, Ollama, Pinokio, ClawCode; link to model libraries and frameworks
 
@@ -43,5 +43,7 @@ Startup scripts install Elixir if needed. See [elixir-tui.md](./elixir-tui.md).
 - **[START.md](./START.md)** – Quick start: API and Electron app commands
 - **[FUNCTIONS.md](./FUNCTIONS.md)** – Reference for all commands, features, and module functions
 - [STORAGE.md](./STORAGE.md) – Where memory, drive, and RAG data are stored
+- [LLAMACPP.md](./LLAMACPP.md) – llama.cpp vs Ollama: what the suite uses and why
+- [SERVER.md](./SERVER.md) – Server screen: future llama.cpp server integration
 - [PLANNING.md](./PLANNING.md) – Roadmap and implementation status
 - [UI_PLANNING.md](./UI_PLANNING.md) – Standalone desktop app (Electron + React + Elixir/Phoenix)

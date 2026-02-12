@@ -39,6 +39,9 @@ const api = typeof window !== 'undefined' && window.api
       get: (path: string) => browserFetch(path),
       post: (path: string, body: unknown, opts?: { timeout?: number }) =>
         browserFetch(path, { method: 'POST', body: JSON.stringify(body), ...opts }),
+      put: (path: string, body: unknown, opts?: { timeout?: number }) =>
+        browserFetch(path, { method: 'PUT', body: JSON.stringify(body), ...opts }),
+      delete: (path: string) => browserFetch(path, { method: 'DELETE' }),
       uploadFile,
     };
 
@@ -76,9 +79,120 @@ export async function getDownloadableModels(): Promise<{ models: string[] }> {
 export async function sendChat(
   model: string,
   messages: { role: string; content: string }[],
-  knowledgeBase?: string
+  knowledgeBases?: string | string[]
 ): Promise<ChatReply> {
-  return (await api.post('/api/chat', { model, messages, knowledge_base: knowledgeBase })) as ChatReply;
+  const body: Record<string, unknown> = { model, messages };
+  if (Array.isArray(knowledgeBases) && knowledgeBases.length > 0) {
+    body.knowledge_bases = knowledgeBases;
+  } else if (typeof knowledgeBases === 'string' && knowledgeBases) {
+    body.knowledge_base = knowledgeBases;
+  }
+  return (await api.post('/api/chat', body)) as ChatReply;
+}
+
+export type StreamCallbacks = {
+  onDelta: (text: string) => void;
+  onDone: () => void;
+  onError: (err: string) => void;
+};
+
+export type ModelOptions = {
+  temperature?: number;
+  num_predict?: number;
+  num_ctx?: number;
+  top_p?: number;
+  top_k?: number;
+  repeat_penalty?: number;
+  repeat_last_n?: number;
+  seed?: number;
+  stop?: string[];
+};
+
+export async function sendChatStream(
+  model: string,
+  messages: { role: string; content: string }[],
+  knowledgeBases: string | string[] | undefined,
+  callbacks: StreamCallbacks,
+  options?: ModelOptions,
+  internetEnabled?: boolean
+): Promise<void> {
+  const url = `${API_BASE}/api/chat/stream`;
+  const body: Record<string, unknown> = { model, messages };
+  if (Array.isArray(knowledgeBases) && knowledgeBases.length > 0) {
+    body.knowledge_bases = knowledgeBases;
+  } else if (typeof knowledgeBases === 'string' && knowledgeBases) {
+    body.knowledge_base = knowledgeBases;
+  } else {
+    body.knowledge_base = 'default';
+  }
+  if (options && Object.keys(options).length > 0) {
+    body.options = options;
+  }
+  if (internetEnabled) {
+    body.internet_enabled = true;
+  }
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    callbacks.onError(
+      msg.includes('fetch') || msg.includes('network') || msg.includes('Failed')
+        ? 'Cannot reach API. Start it: ./start-ai-dev-suite-api.sh'
+        : msg
+    );
+    return;
+  }
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    callbacks.onError((data as { error?: string }).error || res.statusText);
+    return;
+  }
+  const reader = res.body?.getReader();
+  if (!reader) {
+    callbacks.onError('No response body');
+    return;
+  }
+  const decoder = new TextDecoder();
+  let buffer = '';
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const data = JSON.parse(line) as { delta?: string; done?: boolean; error?: string };
+          if (data.delta) callbacks.onDelta(data.delta);
+          if (data.done) callbacks.onDone();
+          if (data.error) callbacks.onError(data.error);
+        } catch (_) {}
+      }
+    }
+    if (buffer.trim()) {
+      try {
+        const data = JSON.parse(buffer) as { delta?: string; done?: boolean; error?: string };
+        if (data.delta) callbacks.onDelta(data.delta);
+        if (data.done) callbacks.onDone();
+        if (data.error) callbacks.onError(data.error);
+      } catch (_) {}
+    }
+    callbacks.onDone();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    callbacks.onError(
+      msg.includes('fetch') || msg.includes('network') || msg.includes('Failed')
+        ? 'Cannot reach API. Start it: ./start-ai-dev-suite-api.sh'
+        : msg
+    );
+  }
 }
 
 export async function getKnowledgeBases(): Promise<{ knowledge_bases: string[] }> {
@@ -89,8 +203,45 @@ export async function createKnowledgeBase(name: string): Promise<{ ok?: boolean;
   return (await api.post('/api/knowledge-bases', { name })) as { ok?: boolean; error?: string };
 }
 
-export async function getKnowledgeBaseContents(name: string): Promise<{ items: string[] }> {
-  return (await api.get(`/api/knowledge-bases/${encodeURIComponent(name)}/contents`)) as { items: string[] };
+export type DriveItem = { path: string; display: string };
+
+export async function getKnowledgeBaseContents(name: string): Promise<{ items: DriveItem[] }> {
+  return (await api.get(`/api/knowledge-bases/${encodeURIComponent(name)}/contents`)) as { items: DriveItem[] };
+}
+
+export async function deleteFromKnowledgeBase(
+  name: string,
+  relPath: string
+): Promise<{ ok?: boolean; error?: string }> {
+  return (await api.post(`/api/knowledge-bases/${encodeURIComponent(name)}/delete`, {
+    path: relPath,
+  })) as { ok?: boolean; error?: string };
+}
+
+export async function deleteBatchFromKnowledgeBase(
+  name: string,
+  paths: string[]
+): Promise<{ ok?: boolean; error?: string }> {
+  return (await api.post(`/api/knowledge-bases/${encodeURIComponent(name)}/delete-batch`, {
+    paths,
+  })) as { ok?: boolean; error?: string };
+}
+
+export async function deleteAllFromKnowledgeBase(
+  name: string
+): Promise<{ ok?: boolean; error?: string }> {
+  return (await api.post(`/api/knowledge-bases/${encodeURIComponent(name)}/delete-all`, {})) as {
+    ok?: boolean;
+    error?: string;
+  };
+}
+
+export async function deleteKnowledgeBase(
+  name: string
+): Promise<{ ok?: boolean; error?: string }> {
+  return (await (api as { delete: (p: string) => Promise<unknown> }).delete(
+    `/api/knowledge-bases/${encodeURIComponent(name)}`
+  )) as { ok?: boolean; error?: string };
 }
 
 export async function addToKnowledgeBase(
@@ -120,6 +271,30 @@ export async function uploadToKnowledgeBase(
 
 export async function getMemory(): Promise<MemoryContent> {
   return (await api.get('/api/memory')) as MemoryContent;
+}
+
+export async function getMemoryManual(): Promise<MemoryContent> {
+  return (await api.get('/api/memory/manual')) as MemoryContent;
+}
+
+export async function getMemoryConv(): Promise<MemoryContent> {
+  return (await api.get('/api/memory/conv')) as MemoryContent;
+}
+
+export async function writeMemoryManual(content: string): Promise<{ ok?: boolean; error?: string }> {
+  return (await (api as { put: (p: string, b: unknown) => Promise<unknown> }).put('/api/memory/manual', { content })) as { ok?: boolean; error?: string };
+}
+
+export async function writeMemoryConv(content: string): Promise<{ ok?: boolean; error?: string }> {
+  return (await (api as { put: (p: string, b: unknown) => Promise<unknown> }).put('/api/memory/conv', { content })) as { ok?: boolean; error?: string };
+}
+
+export async function getBehavior(): Promise<MemoryContent> {
+  return (await api.get('/api/behavior')) as MemoryContent;
+}
+
+export async function writeBehavior(content: string): Promise<{ ok?: boolean; error?: string }> {
+  return (await (api as { put: (p: string, b: unknown) => Promise<unknown> }).put('/api/behavior', { content })) as { ok?: boolean; error?: string };
 }
 
 export async function remember(text: string, model: string): Promise<{ ok?: boolean }> {

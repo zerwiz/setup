@@ -4,22 +4,25 @@ import {
   getDownloadableModels,
   getKnowledgeBases,
   pullModel,
-  sendChat,
+  sendChatStream,
   startOllama,
   uploadToKnowledgeBase,
-  type ChatReply,
 } from '../api';
-import { useChat } from '../contexts/ChatContext';
+import { useChat, type ModelOptions } from '../contexts/ChatContext';
 
 export default function Chat() {
-  const { chats, activeChatId, activeChat, createChat, switchChat, deleteChat, addMessage, setSelectedModel, setKnowledgeBase, setChatTitle } =
+  const { chats, activeChatId, activeChat, createChat, switchChat, deleteChat, addMessage, appendToLastAssistantMessage, setSelectedModel, setKnowledgeBases, toggleKnowledgeBase, setModelOptions, setChatTitle, toggleInternet } =
     useChat();
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
+  const [kbPickerOpen, setKbPickerOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const messages = activeChat?.messages ?? [];
   const selectedModel = activeChat?.selectedModel ?? 'llama3.2:latest';
-  const knowledgeBase = activeChat?.knowledgeBase ?? 'default';
+  const knowledgeBases = activeChat?.knowledgeBases ?? ['default'];
+  const modelOptions = activeChat?.modelOptions;
+  const internetEnabled = activeChat?.internetEnabled ?? false;
   const [models, setModels] = useState<string[]>([]);
-  const [knowledgeBases, setKnowledgeBases] = useState<string[]>(['default']);
+  const [availableKbs, setAvailableKbs] = useState<string[]>(['default']);
   const [ollamaRunning, setOllamaRunning] = useState<boolean | null>(null);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,6 +32,7 @@ export default function Chat() {
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const refreshModels = () => {
     getOllamaModels()
@@ -46,8 +50,8 @@ export default function Chat() {
 
   const refreshKbs = () => {
     getKnowledgeBases()
-      .then((r) => setKnowledgeBases(r.knowledge_bases ?? ['default']))
-      .catch(() => setKnowledgeBases(['default']));
+      .then((r) => setAvailableKbs(r.knowledge_bases ?? ['default']))
+      .catch(() => setAvailableKbs(['default']));
   };
 
   useEffect(() => refreshModels(), []);
@@ -56,6 +60,13 @@ export default function Chat() {
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
+  }, [input]);
 
   const handleSend = async () => {
     const text = input.trim();
@@ -71,16 +82,21 @@ export default function Chat() {
       content: m.content,
     }));
 
+    addMessage({ role: 'assistant', content: '' });
+
     try {
-      const res: ChatReply = await sendChat(selectedModel, msgs, knowledgeBase);
-      if (res.reply) {
-        addMessage({ role: 'assistant', content: res.reply });
-      } else if (res.error) {
-        setError(res.error);
-      }
+      await sendChatStream(selectedModel, msgs, knowledgeBases, {
+        onDelta: (delta) => {
+          appendToLastAssistantMessage(delta);
+        },
+        onDone: () => setLoading(false),
+        onError: (err) => {
+          setError(err);
+          setLoading(false);
+        },
+      }, modelOptions, internetEnabled);
     } catch (e) {
       setError(String(e));
-    } finally {
       setLoading(false);
     }
   };
@@ -118,7 +134,7 @@ export default function Chat() {
     setError(null);
     setUploadingDoc(true);
     try {
-      const res = await uploadToKnowledgeBase(knowledgeBase, file);
+      const res = await uploadToKnowledgeBase(knowledgeBases[0] ?? 'default', file);
       if (res.error) setError(res.error);
       else setError(null);
     } catch (err) {
@@ -130,104 +146,104 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] max-w-4xl">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <h2 className="text-2xl font-semibold text-whynot-body">Chat</h2>
+      <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <h2 className="text-2xl font-semibold text-whynot-body shrink-0">Chat</h2>
           {activeChat && (
             <button
               onClick={() => setEditingChatId(activeChat.id)}
-              className="px-2 py-1 rounded text-xs text-whynot-muted hover:text-whynot-body hover:bg-whynot-border/30"
+              className="px-2 py-1 rounded text-xs text-whynot-muted hover:text-whynot-body hover:bg-whynot-border/30 shrink-0"
               title="Rename chat"
             >
               Rename
             </button>
           )}
-        </div>
-        <button
-          onClick={() => createChat()}
-          className="px-3 py-1.5 rounded text-sm bg-whynot-accent/20 text-whynot-accent hover:bg-whynot-accent/30"
-        >
-          + New chat
-        </button>
-      </div>
-
-      {chats.length >= 1 && (
-        <div className="flex gap-1 mb-4 overflow-x-auto pb-1">
-          {chats.map((c) => (
-            <div
-              key={c.id}
+          {chats.length >= 1 && (
+            <div className="flex gap-1 overflow-x-auto flex-1 min-w-0">
+              {chats.map((c) => (
+                <div
+                  key={c.id}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t text-sm cursor-pointer shrink-0 ${
                 c.id === activeChatId
                   ? 'bg-whynot-surface border border-b-0 border-whynot-border text-whynot-body'
                   : 'bg-whynot-border/30 text-whynot-muted hover:text-whynot-body'
               }`}
-            >
-              {editingChatId === c.id ? (
-                <input
-                  type="text"
-                  defaultValue={c.title}
-                  autoFocus
-                  className="w-24 px-1 py-0.5 rounded bg-whynot-bg border border-whynot-border text-whynot-body text-sm"
-                  onBlur={(e) => {
-                    const v = e.target.value.trim();
-                    if (v) setChatTitle(c.id, v);
-                    setEditingChatId(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const v = (e.target as HTMLInputElement).value.trim();
-                      if (v) setChatTitle(c.id, v);
-                      setEditingChatId(null);
-                    }
-                    if (e.key === 'Escape') setEditingChatId(null);
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              ) : (
-                <button
-                  onClick={() => switchChat(c.id)}
-                  onDoubleClick={(e) => {
-                    e.stopPropagation();
-                    setEditingChatId(c.id);
-                  }}
-                  className="text-left truncate max-w-[120px]"
-                  title="Double-click to rename"
                 >
-                  {c.title}
-                </button>
-              )}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteChat(c.id);
-                }}
-                className="text-whynot-muted hover:text-red-400 text-xs"
-                title="Close chat"
-              >
-                ×
-              </button>
+                  {editingChatId === c.id ? (
+                    <input
+                      type="text"
+                      defaultValue={c.title}
+                      autoFocus
+                      className="w-24 px-1 py-0.5 rounded bg-whynot-bg border border-whynot-border text-whynot-body text-sm"
+                      onBlur={(e) => {
+                        const v = e.target.value.trim();
+                        if (v) setChatTitle(c.id, v);
+                        setEditingChatId(null);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const v = (e.target as HTMLInputElement).value.trim();
+                          if (v) setChatTitle(c.id, v);
+                          setEditingChatId(null);
+                        }
+                        if (e.key === 'Escape') setEditingChatId(null);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <button
+                      onClick={() => switchChat(c.id)}
+                      onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        setEditingChatId(c.id);
+                      }}
+                      className="text-left truncate max-w-[120px] flex items-center gap-1.5"
+                      title={`Double-click to rename · KBs: ${(c.knowledgeBases ?? ['default']).join(', ')}`}
+                    >
+                      <span>{c.title}</span>
+                      <span className="text-[10px] px-1 rounded bg-whynot-border/50 text-whynot-muted shrink-0 max-w-[80px] truncate" title={`Documents: ${(c.knowledgeBases ?? ['default']).join(', ')}`}>
+                        {(c.knowledgeBases ?? ['default']).length > 1 ? `${(c.knowledgeBases ?? []).length} KBs` : (c.knowledgeBases ?? ['default'])[0] === 'default' ? 'default' : (c.knowledgeBases ?? [])[0]}
+                      </span>
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteChat(c.id);
+                    }}
+                    className="text-whynot-muted hover:text-red-400 text-xs"
+                    title="Close chat"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
-      )}
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <span
+            className={`flex items-center gap-1.5 text-xs ${
+              ollamaRunning === true ? 'text-green-500' : ollamaRunning === false ? 'text-red-400' : 'text-whynot-muted'
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                ollamaRunning === true ? 'bg-green-500' : ollamaRunning === false ? 'bg-red-500' : 'bg-whynot-muted'
+              }`}
+            />
+            {ollamaRunning === true ? 'Ollama running' : ollamaRunning === false ? 'Ollama not running' : '…'}
+          </span>
+          <button
+            onClick={() => createChat()}
+            className="px-3 py-1.5 rounded text-sm bg-whynot-accent/20 text-whynot-accent hover:bg-whynot-accent/30"
+          >
+            + New chat
+          </button>
+        </div>
+      </div>
 
       <div className="flex flex-wrap gap-2 items-center mb-4">
-        <span
-          className={`flex items-center gap-1.5 text-sm ${
-            ollamaRunning === true
-              ? 'text-green-500'
-              : ollamaRunning === false
-                ? 'text-red-400'
-                : 'text-whynot-muted'
-          }`}
-        >
-          <span
-            className={`w-2 h-2 rounded-full ${
-              ollamaRunning === true ? 'bg-green-500' : ollamaRunning === false ? 'bg-red-500' : 'bg-whynot-muted'
-            }`}
-          />
-          {ollamaRunning === true ? 'Ollama running' : ollamaRunning === false ? 'Ollama not running' : '…'}
-        </span>
         <button
           onClick={ollamaRunning === false ? handleStartOllama : refreshModels}
           disabled={ollamaRunning === false && startingOllama}
@@ -236,52 +252,89 @@ export default function Chat() {
         >
           {ollamaRunning === false ? (startingOllama ? 'Starting…' : 'Start Ollama') : 'Refresh'}
         </button>
-        <select
-          value={selectedModel}
-          onChange={(e) => setSelectedModel(e.target.value)}
-          className="px-3 py-2 rounded border border-whynot-border bg-whynot-surface text-whynot-body text-sm"
-        >
-          {models.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-          {models.length === 0 && <option>No models</option>}
-        </select>
-        <select
-          value={knowledgeBase}
-          onChange={(e) => setKnowledgeBase(e.target.value)}
-          className="px-3 py-2 rounded border border-whynot-border bg-whynot-surface text-whynot-body text-sm"
-          title="Knowledge base for this chat"
-        >
-          {knowledgeBases.map((kb) => (
-            <option key={kb} value={kb}>
-              KB: {kb}
-            </option>
-          ))}
-        </select>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".txt,.md,.markdown,.pdf,.docx,.rst,.tex"
-          className="hidden"
-          onChange={handleUploadDocument}
-        />
+        <span className="flex items-center gap-1 rounded border border-whynot-border bg-whynot-surface">
+          <select
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
+            className="px-3 py-2 bg-transparent border-0 text-whynot-body text-sm focus:ring-0 focus:outline-none"
+          >
+            {models.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+            {models.length === 0 && <option>No models</option>}
+          </select>
+          <PullModelDropdown onPull={handlePull} loading={pullTarget} />
+        </span>
+        <span className="relative flex items-center gap-1" title="Documents the AI sees. Connect multiple KBs per chat. Create KBs in Drive.">
+          <button
+            type="button"
+            onClick={() => setKbPickerOpen((o) => !o)}
+            className="px-3 py-2 rounded border border-whynot-border bg-whynot-surface text-whynot-body text-sm hover:bg-whynot-border/20"
+          >
+            KBs: {knowledgeBases.length > 1 ? `${knowledgeBases.length} selected` : knowledgeBases[0] === 'default' ? 'default' : knowledgeBases[0]}
+          </button>
+          {kbPickerOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-10"
+                aria-hidden
+                onClick={() => setKbPickerOpen(false)}
+              />
+              <div className="absolute left-0 top-full mt-1 z-20 py-2 px-2 rounded border border-whynot-border bg-whynot-surface shadow-lg min-w-[160px]">
+                <div className="text-xs text-whynot-muted mb-2 px-1">Select KBs for this chat:</div>
+                {availableKbs.map((kb) => (
+                  <label
+                    key={kb}
+                    className="flex items-center gap-2 py-1 px-2 rounded hover:bg-whynot-border/20 cursor-pointer text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={knowledgeBases.includes(kb)}
+                      onChange={() => toggleKnowledgeBase(kb)}
+                    />
+                    <span>{kb === 'default' ? 'default (drive · general)' : kb}</span>
+                  </label>
+                ))}
+                {knowledgeBases.length === 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setKnowledgeBases(['default'])}
+                    className="text-xs text-whynot-accent mt-1"
+                  >
+                    Use default
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </span>
         <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploadingDoc}
-          className="px-3 py-2 rounded border border-whynot-border bg-whynot-surface text-whynot-body text-sm hover:bg-whynot-border/30 disabled:opacity-50"
-          title="Upload document to knowledge base for AI context"
+          type="button"
+          onClick={() => setSettingsOpen(true)}
+          className="px-3 py-2 rounded border border-whynot-border bg-whynot-surface text-whynot-muted hover:text-whynot-body hover:bg-whynot-border/20"
+          title="Model settings (temperature, tokens, etc.)"
         >
-          {uploadingDoc ? 'Uploading…' : 'Upload doc'}
+          ⚙
         </button>
-        <PullModelDropdown onPull={handlePull} loading={pullTarget} />
       </div>
+
+      {settingsOpen && (
+        <ChatSettingsModal
+          options={modelOptions}
+          onSave={(opts) => {
+            setModelOptions(opts);
+            setSettingsOpen(false);
+          }}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
 
       {error && (
         <div className="mb-2 p-2 rounded bg-red-500/20 border border-red-500/40 text-red-400 text-sm">
           {error}
-          {(error.includes('fetch') || error.includes('Failed')) && (
+          {(error.includes('fetch') || error.includes('Failed') || error.includes('network') || error.includes('Cannot reach API')) && (
             <div className="mt-1 text-xs text-whynot-muted">
               API running? Run: <code>./start-ai-dev-suite-api.sh</code> in another terminal
             </div>
@@ -297,27 +350,61 @@ export default function Chat() {
                 m.role === 'user' ? 'bg-whynot-accent/30 text-whynot-body' : 'bg-whynot-border/30 text-whynot-body'
               }`}
             >
-              <pre className="whitespace-pre-wrap font-sans">{m.content}</pre>
+              <pre className="whitespace-pre-wrap font-sans">
+                {m.content || (loading && i === messages.length - 1 ? '…' : '')}
+                {loading && i === messages.length - 1 && m.role === 'assistant' && (
+                  <span className="inline-block w-2 h-4 ml-0.5 bg-whynot-accent animate-pulse align-middle" aria-hidden />
+                )}
+              </pre>
             </div>
           </div>
         ))}
-        {loading && (
-          <div className="flex justify-start">
-            <div className="px-3 py-2 rounded text-whynot-muted text-sm">…</div>
-          </div>
-        )}
         <div ref={scrollRef} />
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-end">
         <input
-          type="text"
+          ref={fileInputRef}
+          type="file"
+          accept=".txt,.md,.markdown,.pdf,.docx,.rst,.tex"
+          className="hidden"
+          onChange={handleUploadDocument}
+        />
+        <textarea
+          ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-          placeholder="Message… /memory /remember /drive /research /bye"
-          className="flex-1 px-3 py-2 rounded border border-whynot-border bg-whynot-surface text-whynot-body placeholder-whynot-muted text-sm"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
+          placeholder={internetEnabled
+            ? 'Message… (web search ON – URLs will be fetched)'
+            : 'Message… /memory /remember /drive /research /bye'}
+          rows={1}
+          className="flex-1 px-3 py-2 rounded border border-whynot-border bg-whynot-surface text-whynot-body placeholder-whynot-muted text-sm resize-none min-h-[2.5rem] max-h-40 overflow-y-auto"
         />
+        <button
+          onClick={() => toggleInternet()}
+          className={`px-3 py-2 rounded border text-sm shrink-0 ${
+            internetEnabled
+              ? 'border-whynot-accent bg-whynot-accent/20 text-whynot-accent'
+              : 'border-whynot-border bg-whynot-surface text-whynot-body hover:bg-whynot-border/30'
+          }`}
+          title={internetEnabled ? 'Web search enabled for this message' : 'Enable web search for AI responses'}
+        >
+          Internet
+        </button>
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploadingDoc}
+          className="px-3 py-2 rounded border border-whynot-border bg-whynot-surface text-whynot-body text-sm hover:bg-whynot-border/30 disabled:opacity-50"
+          title="Upload document to knowledge base"
+        >
+          {uploadingDoc ? 'Uploading…' : 'Upload'}
+        </button>
         <button
           onClick={handleSend}
           disabled={loading}
@@ -330,6 +417,361 @@ export default function Chat() {
   );
 }
 
+function SliderRow({
+  label,
+  value,
+  min,
+  max,
+  step,
+  onChange,
+  unit,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (v: number) => void;
+  unit?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-xs text-whynot-muted mb-1">
+        {label} {unit != null && `(${unit})`}
+      </label>
+      <div className="flex items-center gap-2">
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(parseFloat(e.target.value))}
+          className="flex-1"
+        />
+        <span className="text-sm text-whynot-body w-14">{value}</span>
+      </div>
+    </div>
+  );
+}
+
+function NumRow({
+  label,
+  value,
+  min,
+  max,
+  step,
+  onChange,
+  hint,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  onChange: (v: number) => void;
+  hint?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-xs text-whynot-muted mb-1">{label}</label>
+      <input
+        type="number"
+        min={min}
+        max={max}
+        step={step ?? 1}
+        value={value}
+        onChange={(e) => onChange(Math.max(min, Math.min(max, parseInt(e.target.value, 10) || min)))}
+        className="w-full px-3 py-2 rounded border border-whynot-border bg-whynot-bg text-whynot-body text-sm"
+        placeholder={hint}
+      />
+    </div>
+  );
+}
+
+const PRESETS_STORAGE_KEY = 'zerwiz-ai-dev-suite-model-presets';
+
+type ModelOptionsPreset = { id: string; name: string; options: ModelOptions };
+
+function loadPresets(): ModelOptionsPreset[] {
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(PRESETS_STORAGE_KEY) : null;
+    if (!raw) return [];
+    const data = JSON.parse(raw) as ModelOptionsPreset[];
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function savePresets(presets: ModelOptionsPreset[]) {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(PRESETS_STORAGE_KEY, JSON.stringify(presets));
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+function ChatSettingsModal({
+  options,
+  onSave,
+  onClose,
+}: {
+  options?: ModelOptions;
+  onSave: (opts: ModelOptions | undefined) => void;
+  onClose: () => void;
+}) {
+  const hasOptions = options !== undefined && Object.keys(options).length > 0;
+  const [useCustom, setUseCustom] = useState(hasOptions);
+  const [presets, setPresets] = useState<ModelOptionsPreset[]>(() => loadPresets());
+  const [temp, setTemp] = useState(options?.temperature ?? 0.7);
+  const [numPredict, setNumPredict] = useState(options?.num_predict ?? 2048);
+  const [numCtx, setNumCtx] = useState(options?.num_ctx ?? 4096);
+  const [topP, setTopP] = useState(options?.top_p ?? 0.9);
+  const [topK, setTopK] = useState(options?.top_k ?? 40);
+  const [repeatPenalty, setRepeatPenalty] = useState(options?.repeat_penalty ?? 1.1);
+  const [repeatLastN, setRepeatLastN] = useState(options?.repeat_last_n ?? 64);
+  const [seed, setSeed] = useState(options?.seed ?? 0);
+  const [stopStr, setStopStr] = useState((options?.stop ?? []).join(', '));
+
+  const applyPresetToForm = (opts: ModelOptions) => {
+    setUseCustom(true);
+    setTemp(opts.temperature ?? 0.7);
+    setNumPredict(opts.num_predict ?? 2048);
+    setNumCtx(opts.num_ctx ?? 4096);
+    setTopP(opts.top_p ?? 0.9);
+    setTopK(opts.top_k ?? 40);
+    setRepeatPenalty(opts.repeat_penalty ?? 1.1);
+    setRepeatLastN(opts.repeat_last_n ?? 64);
+    setSeed(opts.seed ?? 0);
+    setStopStr((opts.stop ?? []).join(', '));
+  };
+
+  const getFormOptions = (): ModelOptions => {
+    const stop = stopStr.trim() ? stopStr.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
+    return {
+      temperature: temp,
+      num_predict: numPredict,
+      num_ctx: numCtx,
+      top_p: topP,
+      top_k: topK,
+      repeat_penalty: repeatPenalty,
+      repeat_last_n: repeatLastN,
+      seed: seed > 0 ? seed : undefined,
+      stop,
+    };
+  };
+
+  useEffect(() => {
+    if (options) {
+      setTemp(options.temperature ?? 0.7);
+      setNumPredict(options.num_predict ?? 2048);
+      setNumCtx(options.num_ctx ?? 4096);
+      setTopP(options.top_p ?? 0.9);
+      setTopK(options.top_k ?? 40);
+      setRepeatPenalty(options.repeat_penalty ?? 1.1);
+      setRepeatLastN(options.repeat_last_n ?? 64);
+      setSeed(options.seed ?? 0);
+      setStopStr((options.stop ?? []).join(', '));
+    }
+  }, [options]);
+
+  const handleSaveAsPreset = () => {
+    const name = prompt('Preset name');
+    if (!name?.trim()) return;
+    const opts = getFormOptions();
+    const preset: ModelOptionsPreset = {
+      id: 'preset-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+      name: name.trim(),
+      options: opts,
+    };
+    const next = [...presets, preset];
+    setPresets(next);
+    savePresets(next);
+  };
+
+  const handleDeletePreset = (id: string) => {
+    const next = presets.filter((p) => p.id !== id);
+    setPresets(next);
+    savePresets(next);
+  };
+
+  const handleSave = () => {
+    if (!useCustom) {
+      onSave(undefined);
+      return;
+    }
+    onSave(getFormOptions());
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} aria-hidden />
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-lg max-h-[90vh] flex flex-col rounded-lg border border-whynot-border bg-whynot-surface shadow-xl">
+        <div className="p-4 border-b border-whynot-border shrink-0">
+          <h3 className="text-lg font-medium text-whynot-body">Model settings</h3>
+          <p className="text-xs text-whynot-muted mt-1">
+            Ollama parameters for this chat. Leave default for model defaults.
+          </p>
+        </div>
+        <div className="px-4 py-3 border-b border-whynot-border shrink-0 space-y-2">
+          <div className="text-xs text-whynot-muted font-medium">Saved presets</div>
+          {presets.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {presets.map((p) => (
+                <span
+                  key={p.id}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded border border-whynot-border bg-whynot-bg text-sm"
+                >
+                  <button
+                    type="button"
+                    onClick={() => applyPresetToForm(p.options)}
+                    className="text-whynot-accent hover:underline"
+                  >
+                    {p.name}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeletePreset(p.id)}
+                    className="text-whynot-muted hover:text-red-400 text-xs"
+                    title="Delete preset"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-whynot-muted">No saved presets yet</p>
+          )}
+        </div>
+        <label className="flex items-center gap-2 px-4 py-2 border-b border-whynot-border cursor-pointer shrink-0">
+          <input
+            type="checkbox"
+            checked={useCustom}
+            onChange={(e) => setUseCustom(e.target.checked)}
+          />
+          <span className="text-sm text-whynot-body">Use custom settings</span>
+        </label>
+        {useCustom && (
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <SliderRow
+                label="Temperature"
+                value={temp}
+                min={0}
+                max={2}
+                step={0.1}
+                onChange={setTemp}
+                unit="0–2"
+              />
+              <SliderRow
+                label="Top P"
+                value={topP}
+                min={0}
+                max={1}
+                step={0.05}
+                onChange={setTopP}
+                unit="0–1"
+              />
+              <NumRow
+                label="Max tokens"
+                value={numPredict}
+                min={64}
+                max={131072}
+                step={64}
+                onChange={setNumPredict}
+                hint="2048"
+              />
+              <NumRow
+                label="Context window (num_ctx)"
+                value={numCtx}
+                min={512}
+                max={131072}
+                step={512}
+                onChange={setNumCtx}
+                hint="4096"
+              />
+              <NumRow
+                label="Top K"
+                value={topK}
+                min={1}
+                max={100}
+                onChange={setTopK}
+                hint="40"
+              />
+              <NumRow
+                label="Repeat penalty"
+                value={repeatPenalty}
+                min={1}
+                max={2}
+                step={0.05}
+                onChange={setRepeatPenalty}
+                hint="1.1"
+              />
+              <NumRow
+                label="Repeat last N"
+                value={repeatLastN}
+                min={0}
+                max={512}
+                onChange={setRepeatLastN}
+                hint="64"
+              />
+              <NumRow
+                label="Seed"
+                value={seed}
+                min={-1}
+                max={2147483647}
+                onChange={setSeed}
+                hint="0 = random"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-whynot-muted mb-1">
+                Stop sequences (comma-separated)
+              </label>
+              <input
+                type="text"
+                value={stopStr}
+                onChange={(e) => setStopStr(e.target.value)}
+                placeholder="e.g. \n\n, END, [DONE]"
+                className="w-full px-3 py-2 rounded border border-whynot-border bg-whynot-bg text-whynot-body text-sm placeholder-whynot-muted"
+              />
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleSaveAsPreset}
+                className="px-3 py-2 rounded border border-whynot-border text-whynot-muted hover:text-whynot-body text-sm"
+              >
+                Save as preset
+              </button>
+            </div>
+          </div>
+        )}
+        <div className="flex gap-2 justify-end p-4 border-t border-whynot-border shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-3 py-2 rounded border border-whynot-border text-whynot-muted hover:text-whynot-body text-sm"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            className="px-4 py-2 rounded bg-whynot-accent text-white text-sm font-medium hover:opacity-90"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 function PullModelDropdown({ onPull, loading }: { onPull: (name: string) => void; loading: string | null }) {
   const [open, setOpen] = useState(false);
   const [downloadable, setDownloadable] = useState<string[]>([]);
@@ -339,12 +781,13 @@ function PullModelDropdown({ onPull, loading }: { onPull: (name: string) => void
   }, [open]);
 
   return (
-    <div className="relative">
+    <div className="relative border-l border-whynot-border">
       <button
         onClick={() => setOpen(!open)}
-        className="px-3 py-2 rounded border border-whynot-border bg-whynot-surface text-whynot-body text-sm"
+        className="px-2 py-2 text-whynot-body text-sm hover:bg-whynot-border/30 whitespace-nowrap"
+        title="Download model"
       >
-        Download model
+        ↓ Download
       </button>
       {open && (
         <>

@@ -1,17 +1,75 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import path from 'path';
+import os from 'os';
 import { spawn, ChildProcess } from 'child_process';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
+
+function expandConfigDir(dir: string): string {
+  const trimmed = dir?.trim() || '';
+  if (trimmed.startsWith('~')) {
+    return path.join(os.homedir(), trimmed.slice(1).replace(/^\//, ''));
+  }
+  return trimmed;
+}
+
+function ensureConfigDirAndFiles(dir: string): void {
+  const expanded = expandConfigDir(dir);
+  if (!expanded) return;
+  mkdirSync(expanded, { recursive: true });
+  const files = ['memory.md', 'conversation_memory.md', 'behavior.md'];
+  for (const f of files) {
+    const p = path.join(expanded, f);
+    if (!existsSync(p)) {
+      writeFileSync(p, '', 'utf-8');
+    }
+  }
+}
 
 // Avoid SUID sandbox error on Linux (chrome-sandbox permissions)
 if (process.platform === 'linux') {
   app.commandLine.appendSwitch('no-sandbox');
 }
 
+// Single instance: prevent profile lock when launching a second copy
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    const wins = BrowserWindow.getAllWindows();
+    if (wins.length > 0) {
+      const w = wins[0];
+      if (w.isMinimized()) w.restore();
+      w.focus();
+    }
+  });
+}
+
 const API_PORT = 41434;
 const VITE_PORT = 5174;
 
 let apiProcess: ChildProcess | null = null;
+
+function getSettingsPath(): string {
+  return path.join(app.getPath('userData'), 'settings.json');
+}
+
+function loadSettings(): { configDir?: string } {
+  try {
+    const p = getSettingsPath();
+    if (existsSync(p)) {
+      const data = JSON.parse(readFileSync(p, 'utf-8'));
+      return { configDir: data.configDir || undefined };
+    }
+  } catch (_) {}
+  return {};
+}
+
+function saveSettings(settings: { configDir?: string }): void {
+  const p = getSettingsPath();
+  mkdirSync(path.dirname(p), { recursive: true });
+  writeFileSync(p, JSON.stringify(settings, null, 2), 'utf-8');
+}
 
 function startElixirAPI(): Promise<void> {
   return new Promise((resolve) => {
@@ -22,11 +80,16 @@ function startElixirAPI(): Promise<void> {
       return;
     }
 
-    // Use shell so mix is found in user's PATH
+    const settings = loadSettings();
+    const env: NodeJS.ProcessEnv = { ...process.env, MIX_ENV: 'dev' };
+    if (settings.configDir?.trim()) {
+      env.AI_DEV_SUITE_CONFIG_DIR = settings.configDir.trim();
+    }
+
     const cmd = `cd "${rootDir}" && mix run -e "AiDevSuiteTui.API.start()"`;
     apiProcess = spawn(process.platform === 'win32' ? 'cmd' : '/bin/sh', [process.platform === 'win32' ? '/c' : '-c', cmd], {
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env, MIX_ENV: 'dev' },
+      env,
     });
 
     apiProcess.stdout?.on('data', (d) => process.stdout.write(d.toString()));
@@ -58,7 +121,6 @@ function createWindow() {
 
   if (isDev) {
     win.loadURL(`http://localhost:${VITE_PORT}`);
-    win.webContents.openDevTools();
   } else {
     win.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
@@ -89,4 +151,51 @@ ipcMain.handle('app:quit', () => {
     apiProcess = null;
   }
   app.quit();
+});
+
+ipcMain.handle('dialog:selectFilesAndFolders', async () => {
+  const win = BrowserWindow.getFocusedWindow();
+  if (!win) return { canceled: true, paths: [] };
+  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+    title: 'Select files or folders to add to knowledge base',
+    properties: ['openFile', 'openDirectory', 'multiSelections'],
+    buttonLabel: 'Add to KB',
+  });
+  return { canceled, paths: filePaths ?? [] };
+});
+
+ipcMain.handle('dialog:selectDirectory', async () => {
+  const win = BrowserWindow.getFocusedWindow();
+  if (!win) return { canceled: true, path: '' };
+  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+    title: 'Select config directory',
+    properties: ['openDirectory'],
+    buttonLabel: 'Select',
+  });
+  return { canceled, path: filePaths?.[0] ?? '' };
+});
+
+ipcMain.handle('settings:getConfigDir', () => loadSettings().configDir ?? '');
+
+ipcMain.handle('settings:setConfigDir', (_ev, dir: string) => {
+  const trimmed = dir?.trim() || undefined;
+  if (trimmed) {
+    ensureConfigDirAndFiles(trimmed);
+  }
+  saveSettings({ configDir: trimmed });
+  return { ok: true };
+});
+
+ipcMain.handle('settings:openConfigDirInFileManager', async (_ev, dir: string) => {
+  const expanded = dir?.trim().startsWith('~')
+    ? path.join(os.homedir(), dir.trim().slice(1).replace(/^\//, ''))
+    : dir?.trim() || '';
+  if (!expanded) return { ok: false, error: 'No config directory set' };
+  try {
+    mkdirSync(expanded, { recursive: true });
+    await shell.openPath(expanded);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: String(e) };
+  }
 });

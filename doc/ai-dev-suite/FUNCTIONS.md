@@ -98,16 +98,21 @@ model: llama3.2
 
 ---
 
-## 6. Document Drive
+## 6. Document Drive & Knowledge Bases
 
 | Function | What it does |
 |----------|--------------|
 | **Add to drive** | `/drive add <path>` – Copies file/folder to `~/.config/ai-dev-suite/drive/` |
+| **Add to KB** | API/Electron: path or URL → copies to knowledge base folder; supports files and folders |
 | **Convert** | PDF (pdftotext), DOCX (pandoc), TXT/MD → text with `[file:]` `[type:]` `[source:]` metadata |
 | **Load index** | Injects drive tree + converted content (up to ~14K chars) into system prompt |
 | **List contents** | Recursive listing; hides `.converted` |
 
-**Supported formats:** `.pdf`, `.docx`, `.txt`, `.md`, `.markdown`, `.rst`, `.tex`
+**Electron Drive screen:** Select knowledge base, create new KB, add via path/URL input or **Browse files & folders** button (system file dialog).
+
+**Supported formats:** `.pdf`, `.docx`, `.txt`, `.md`, `.markdown`, `.rst`, `.tex` + fallback for other text files (`.py`, `.js`, `.json`, `.yaml`, etc., valid UTF-8, &lt;500KB)
+
+**Folder add:** When adding a folder path, all files in that folder (recursively) are copied and converted into the knowledge base.
 
 **Requirements:** `pdftotext` (poppler) for PDF, `pandoc` for DOCX
 
@@ -117,11 +122,19 @@ model: llama3.2
 
 | Function | What it does |
 |----------|--------------|
+| **Internet button** (Chat) | Toggle ON before sending → fetches URLs in your message and injects web context. AI will say if it could reach the internet or not. |
 | `/research <query>` | Calls `rag research "query"` (Python RAG tool) |
 | **Fallback** | Tries `rag` in PATH; else `python3 tools/rag/rag.py research ...` |
+| **Direct URLs** | URLs in your message (e.g. `https://example.com`) are fetched directly, not just searched |
 | **System hint** | Model suggests `/research <query>` when user asks for web lookup |
 
-**Requires:** `tools/rag` with `duckduckgo-search`, `trafilatura`, Ollama running
+**Requires:** `tools/rag` with `duckduckgo-search`, `requests`, `trafilatura`. ChromaDB optional for web-only.
+
+**Jina API key (optional):** For higher rate limits when fetching URLs, set `JINA_API_KEY` when starting the API (e.g. `JINA_API_KEY=your_key ./start-ai-dev-suite-api.sh`). Get a key at [jina.ai](https://jina.ai/).
+
+**Tip:** Turn the **Internet** button ON (it turns accent-colored) *before* sending. The placeholder will show "web search ON" when active.
+
+**Startup:** RAG deps are installed automatically when you run any `start-ai-dev-suite-*.sh` script. The Elixir API also installs them on launch when started by the Electron app.
 
 ---
 

@@ -148,7 +148,7 @@ tools/ai-dev-suite/
 
 - [ ] Windows PowerShell version of install.sh (currently Mac/Linux)
 - [ ] Persist preferred model across sessions
-- [ ] Stream chat responses (currently non-streaming)
+- [x] Stream chat responses – ✅ Done in Electron app (desktop UI streams; TUI remains non-streaming)
 
 ---
 

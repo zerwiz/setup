@@ -17,7 +17,7 @@ Hello! This is your guide to the terminal tools and utilities from [WhyNot Produ
 | Tool | Description |
 |------|-------------|
 | **[RAG](./rag/)** | Index docs and answer with Ollama; web research. |
-| **[AI Dev Suite](./ai-dev-suite/)** | Install commands, Elixir TUI, Electron desktop app (Chat, Drive, Memory, Tools). API on `:41434`. Full install: `curl \| bash` → `ai-dev-suite-api`, `ai-dev-suite-web`, `ai-dev-suite-tui`, `ai-dev-suite-electron`. |
+| **[AI Dev Suite](./ai-dev-suite/)** | Install commands, Elixir TUI, Electron desktop app (Home, Chat, Drive, Memory, Tools, Settings, Server ↻). API on `:41434`. Internet/web search in Chat. Full install: `curl \| bash` → `ai-dev-suite-api`, `ai-dev-suite-web`, `ai-dev-suite-tui`, `ai-dev-suite-electron`. |
 | **Workshop Setup** | Installs curl, Node.js, Git. Push to zerwiz/setup. |
 
 ### Quick start commands
@@ -58,6 +58,7 @@ curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/setup.sh | bash
 | [Start](./ai-dev-suite/START.md) | Start commands: API, web UI, Electron, TUI (scripts in `tools/`) |
 | [Functions](./ai-dev-suite/FUNCTIONS.md) | Full command/module reference (chat, drive, memory, research) |
 | [Storage](./ai-dev-suite/STORAGE.md) | Where memory, drive, and RAG data are stored |
+| [llama.cpp](./ai-dev-suite/LLAMACPP.md) | llama.cpp vs Ollama; Server screen placeholder |
 | [Planning](./ai-dev-suite/PLANNING.md) | Roadmap and implementation status |
 | [UI Planning](./ai-dev-suite/UI_PLANNING.md) | Desktop app architecture (Electron + React + Elixir) |
 | [TUI quick start](./ai-dev-suite/elixir-tui.md) | Interactive menu quick start |
