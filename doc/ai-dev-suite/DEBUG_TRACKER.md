@@ -31,7 +31,7 @@ Tracks issues encountered, fixes applied, and what remains unsolved. Use this to
 | Field | Details |
 |-------|---------|
 | **Problem** | Chat shows "(no response)" with debug link; stream completes but no content. |
-| **Root cause** | (a) Large KB (e.g. Ai_Dev_Suite) can cause empty replies. (b) **Thinking:** Sending `think: true` to non-thinking models (qwen2.5-coder, llama3.1) caused empty responses. (c) First model load can take 1–2 min; user may give up too soon. |
+| **Root cause** | (a) Large KB (e.g. Ai_Dev_Suite) can cause empty replies. (b) **Thinking:** Sending `think: true` to non-thinking models (qwen2.5-coder, llama3.1) caused empty responses. (c) First model load can be slow; user may give up too soon. |
 | **Fix** | (a) "Try default KB" button when (no response) with non-default KB. (b) Disabled `think: true` entirely in backend (was only enabled for qwen3, deepseek-r1, etc., but still caused issues). (c) Debug checklist and START.md troubleshooting. |
 | **Status** | Done for thinking; KB/load time are mitigations, not full fixes |
 | **Code** | `ai_dev_suite_tui.ex` (`build_ollama_body` – think disabled), `Chat.tsx` (NoResponseDebug, Try default KB), `START.md` § Troubleshooting |
@@ -153,7 +153,7 @@ Tracks issues encountered, fixes applied, and what remains unsolved. Use this to
 | Stream sometimes empty with default KB | If "(no response)" persists with default KB, root cause unknown; may need backend/Ollama logs |
 | Full startup failure (all clients) | Use two-terminal: `./start-ai-dev-suite-api.sh` then `AI_DEV_SUITE_API_STARTED=1 npm run dev`; see START.md § Manual |
 | CORS/stream from Vite dev (5174) to API (41434) | CORS is configured; no confirmed issues reported |
-| Model loading progress | First load takes 1–2 min; no progress indicator |
+| Model loading progress | First load can be slow; no progress indicator |
 
 ---
 
@@ -164,7 +164,7 @@ Tracks issues encountered, fixes applied, and what remains unsolved. Use this to
 Shown when user sees "(no response)" and clicks **debug**:
 
 1. Try KB: default — large KB can cause empty replies  
-2. First model load can take 1–2 min; wait and retry  
+2. First model load can be slow; wait and retry  
 3. Ollama running? Click ↻ Refresh  
 4. Run app from terminal to see API logs  
 5. Port 41434 free? Kill other API instances  
@@ -185,7 +185,7 @@ curl -s http://localhost:41434/api/ollama/models
 # Ollama reachable?
 curl -s http://localhost:11434/api/tags
 
-# Stream (may take 1–2 min first time)
+# Stream (first time may be slower)
 curl -s -N -X POST http://localhost:41434/api/chat/stream \
   -H "Content-Type: application/json" \
   -d '{"model":"qwen2.5-coder:14b","messages":[{"role":"user","content":"hi"}],"knowledge_base":"default"}'

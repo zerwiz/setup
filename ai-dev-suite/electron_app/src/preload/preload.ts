@@ -29,7 +29,7 @@ const apiFetch = async (path: string, options?: RequestInit & { timeout?: number
     clearTimeout(id);
     const msg = e instanceof Error ? e.message : 'Failed to fetch';
     if (msg === 'The operation was aborted.') {
-      return { error: 'Request timed out (chat can take 1–2 min)' };
+      return { error: 'Request timed out' };
     }
     if (msg.includes('fetch')) {
       return { error: 'Cannot reach API. Start it: ./start-ai-dev-suite-api.sh' };

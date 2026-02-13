@@ -27,7 +27,7 @@ curl -fsSL https://raw.githubusercontent.com/zerwiz/setup/main/ai-dev-suite/inst
 
 **Install locations** (adapts to your system):
 - Code: `~/.local/share/ai-dev-suite` (or `$XDG_DATA_HOME/ai-dev-suite` on Linux)
-- Config/data: `~/.config/ai-dev-suite` (memory, drive, knowledge bases)
+- Config/data: `~/.config/ai-dev-suite` (RAG memory, drive, knowledge bases)
 - Override: `AI_DEV_SUITE_DIR=/path/to/install curl ... | bash`
 
 Then run any launcher:
@@ -157,7 +157,7 @@ Click **Refresh** in Chat. If "Ollama not running": Start Ollama button or `olla
 
 ### 4. First model load
 
-The first time you use a model (e.g. llama3.1), Ollama loads it into memory. Can take 1–2 minutes. Wait and try again.
+The first time you use a model (e.g. llama3.1), Ollama loads it into memory. Wait and try again if the first response is slow.
 
 ### 5. Ports in use
 
@@ -196,9 +196,9 @@ ollama run llama3.1:latest "hello"
 
 If this hangs or errors: fix Ollama (e.g. GPU drivers, disk space) before using Chat.
 
-### 10. Knowledge base / system prompt
+### 10. Knowledge base / (no response)
 
-Very large or malformed docs in the KB can cause slow or empty responses. Try KB: **default** (minimal drive) to rule it out.
+**Large KBs (e.g. Ai_Dev_Suite) often cause "(no response)".** The system injects up to ~10K chars of doc content; big KBs can overload the model. **Try:** (a) Switch to KB: **default** for simple chats. (b) Ask specific, targeted questions instead of "read everything." (c) Create a smaller KB with only the docs you need for that chat.
 
 ### 11. Firewall / VPN
 
@@ -211,3 +211,7 @@ If the API won’t start: `cd ai-dev-suite/elixir_tui && mix deps.get && mix com
 ### 13. Timeout
 
 First model load can exceed 30s. Chat allows up to ~5 min. If you see a timeout error, the model may be too large for your hardware.
+
+### 14. Slash commands not triggering
+
+If `/memory`, `/remember`, `/drive`, `/research`, or `/bye` are sent to the LLM instead of triggering actions, you may be on an older build. Restart the app or rebuild: `cd ai-dev-suite/electron_app && npm run dev`.

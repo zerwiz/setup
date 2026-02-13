@@ -2,7 +2,7 @@
 
 **Collaborate with me to make this system better.** It's alpha for now — lots of bugs and lots to do. Your feedback and contributions are welcome.
 
-**AI Dev Suite** — Local-first chat, memory, and RAG research. One curl install. Use it in the terminal (TUI), as a desktop app (Electron), or via API. Runs offline with Ollama. Connect to Zed, OpenCode, and ACP-compatible IDEs.
+**AI Dev Suite** — Local-first chat, RAG memory, and research. One curl install. Use it in the terminal (TUI), as a desktop app (Electron), or via API. Runs offline with Ollama. Connect to Zed, OpenCode, and ACP-compatible IDEs.
 
 **Debugger** — When the Suite shows "(no response)" or errors, the debugger helps you see what’s wrong. Status, logs, test chat, and AI-backed fix suggestions. Includes the **Observer** (embedded in the UI or run as a terminal script) that tails API and Ollama logs, health checks every 10s. Run it standalone or alongside the Suite.
 
@@ -59,7 +59,7 @@ The **Electron app** is a desktop GUI with the same backend (Elixir API). Quit s
 | **Tools** | Install dev tools | One-click install for Zed, OpenCode, Ollama, LM Studio, OpenClaw, Workshop Setup. Each runs its official install script. No hunting for download pages. |
 | **Chat** | Main AI interaction | Multiple chat tabs; each can use a different model and knowledge base. **Model picker** selects Ollama model (or download a new one). **KB selector** chooses which documents the AI sees—default (general drive) or a project-specific KB. **Internet** toggle enables web search per message; URLs you paste are fetched directly. **Streaming** shows token-by-token output. Slash commands: `/memory`, `/remember`, `/behavior`, `/drive`, `/research`, `/bye`. Use `/bye` to save conversation facts before quitting. |
 | **Drive** | Document context | Create multiple **knowledge bases** (default + custom per project). Add files, folders, or URLs. **Browse files & folders** opens the system file dialog. Supported: PDF, DOCX, TXT, MD, code files (.py, .js, .json, etc.). Files are copied, converted to text, and injected into the chat context (up to ~14K chars). Folder add recursively includes all files. Delete files, delete KBs, multi-select delete. Tree view for hierarchy. |
-| **Memory** | Persistent AI context | Three files: `memory.md` (manual notes via `/remember`), `conversation_memory.md` (auto-extracted facts when you type `/bye`), `behavior.md` (tone, style, how the AI should act). View and **edit all three** via modals. Browse button opens the folder; Save writes changes. These files are always injected into the system prompt. |
+| **Memory** | RAG memory (persistent AI context) | Three files: `memory.md` (manual notes via `/remember`), `conversation_memory.md` (auto-extracted facts when you type `/bye`), `behavior.md` (tone, style). View and **edit all three** via modals. Slash commands: `/memory` or `memory` to open; `/remember`, `/bye`. |
 | **Settings** | Config and paths | **Config directory** holds memory, behavior, drive, and knowledge bases. Browse opens it in your file manager; Select folder lets you pick a different path; Save applies (restart required). Override via `AI_DEV_SUITE_CONFIG_DIR` env var. |
 | **Server ↻** | Future integration | Placeholder for llama.cpp server. See [LLAMACPP.md](./doc/ai-dev-suite/LLAMACPP.md). |
 
@@ -74,7 +74,7 @@ The **Elixir TUI** runs in the terminal. It gives you a text menu to:
 - **Install tools** — Press `1`–`6` to install Zed, OpenCode, Ollama, LM Studio, OpenClaw, or Workshop Setup; or `a` for all
 - **Start Ollama** — Run `ollama serve` in the background
 - **Chat** — Pick a model (or download one), then chat with Ollama locally
-- **Slash commands** — `/memory` (show manual + conversation memory), `/remember <text>` (add a note), `/behavior` (set tone and style), `/drive add <path>` (add docs to context), `/research <query>` (web search + AI answer), `/bye` (exit and save conversation facts to memory)
+- **Slash commands** (all require `/`; `memory` also works) — `/memory` (open RAG memory), `/remember <text>` (add a note), `/behavior` (set tone), `/drive add <path>` (add docs), `/research <query>` (web search + AI answer), `/bye` (save conversation facts to RAG memory)
 
 Memory, behavior, and drive content are stored in `~/.config/ai-dev-suite/` and injected into the chat context.
 

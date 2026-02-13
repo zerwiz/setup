@@ -9,6 +9,10 @@ Format: list entries under a date/version heading; use present tense (“Add …
 
 ## [Unreleased]
 
+- Large KB (Ai_Dev_Suite): reduce converted content cap 14K→10K; add ⚡ hint when non-default KB; START.md troubleshooting for (no response).
+- Remove "first load can take 1–2 min" from Chat UI and docs (preload timeout, DEBUG_STEPS, START, DEBUG_TRACKER).
+- Chat: slash command handling – `/memory`, `memory`, `/remember`, `/drive`, `/behavior`, `/research`, `/bye` trigger actions (navigate or API) instead of sending to LLM.
+- Docs: use "RAG memory" where appropriate (README, STORAGE).
 - README: add short descriptions of AI Dev Suite, Debugger, and Observer below collaboration line.
 - CURL_INSTALLS: add Share blocks section with correct zerwiz/setup URLs for homepage/share pages (fix old WhyNotProductionsHomepage/for-zerwiz-setup URLs).
 - Add run-debugger.sh, run-observer.sh – curl | bash quick run for debugger and observer (no permanent install).

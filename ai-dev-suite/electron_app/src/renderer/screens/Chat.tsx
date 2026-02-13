@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   getOllamaModels,
   getDownloadableModels,
@@ -9,10 +10,14 @@ import {
   startOllama,
   uploadToKnowledgeBase,
   askDebugger,
+  remember,
+  saveConversationFacts,
+  research,
 } from '../api';
 import { useChat, type ModelOptions } from '../contexts/ChatContext';
 
 export default function Chat() {
+  const navigate = useNavigate();
   const { chats, activeChatId, activeChat, createChat, switchChat, deleteChat, addMessage, appendToLastAssistantMessage, appendThinkingToLastAssistantMessage, setSelectedModel, setKnowledgeBases, toggleKnowledgeBase, setModelOptions, setChatTitle, toggleInternet, setChatFailed, setChatSucceeded } =
     useChat();
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
@@ -109,6 +114,77 @@ export default function Chat() {
   const handleSend = async () => {
     const text = input.trim();
     if (!text || loading) return;
+
+    const lower = text.toLowerCase();
+    const cmd = lower.split(/\s+/)[0];
+    const rest = text.slice(cmd.length).trim();
+
+    // Slash commands: require / prefix (or "memory" as shorthand for /memory)
+    if (cmd === 'memory' || cmd === '/memory') {
+      setInput('');
+      navigate('/memory');
+      return;
+    }
+    if (cmd === '/drive') {
+      setInput('');
+      navigate('/drive');
+      return;
+    }
+    if (cmd === '/behavior' || cmd === '/behaviour') {
+      setInput('');
+      navigate('/settings');
+      return;
+    }
+    if (cmd === '/remember') {
+      setInput('');
+      addMessage({ role: 'user', content: text });
+      if (rest) {
+        try {
+          await remember(rest, selectedModel);
+          addMessage({ role: 'assistant', content: `Added to RAG memory: "${rest.slice(0, 80)}${rest.length > 80 ? '…' : ''}"` });
+        } catch (e) {
+          addMessage({ role: 'assistant', content: `Error: ${String(e)}` });
+        }
+      } else {
+        addMessage({ role: 'assistant', content: 'Usage: /remember <text> — or go to Memory to view/add.' });
+      }
+      return;
+    }
+    if (cmd === '/bye') {
+      setInput('');
+      addMessage({ role: 'user', content: text });
+      try {
+        const msgsForBye = [...messages, { role: 'user', content: text }];
+        await saveConversationFacts(selectedModel, msgsForBye);
+        addMessage({ role: 'assistant', content: 'Saved conversation facts to RAG memory.' });
+      } catch (e) {
+        addMessage({ role: 'assistant', content: `Error saving: ${String(e)}` });
+      }
+      return;
+    }
+    if (cmd === '/research') {
+      setInput('');
+      addMessage({ role: 'user', content: text });
+      if (rest) {
+        setLoading(true);
+        setError(null);
+        try {
+          const r = await research(rest);
+          if (r.result) {
+            addMessage({ role: 'assistant', content: r.result });
+          } else {
+            addMessage({ role: 'assistant', content: r.error ?? 'Research failed.' });
+          }
+        } catch (e) {
+          addMessage({ role: 'assistant', content: `Error: ${String(e)}` });
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        addMessage({ role: 'assistant', content: 'Usage: /research <query>' });
+      }
+      return;
+    }
 
     setInput('');
     addMessage({ role: 'user', content: text });
@@ -333,7 +409,7 @@ export default function Chat() {
           </select>
           <PullModelDropdown onPull={handlePull} loading={pullTarget} />
         </span>
-        <span className="relative flex items-center gap-1" title="Documents the AI sees. Connect multiple KBs per chat. Create KBs in Drive.">
+        <span className="relative flex items-center gap-1" title="Documents the AI sees. Large KBs can cause (no response) — try default for simple chats.">
           <button
             type="button"
             onClick={() => setKbPickerOpen((o) => !o)}
@@ -341,6 +417,9 @@ export default function Chat() {
           >
             KBs: {knowledgeBases.length > 1 ? `${knowledgeBases.length} selected` : knowledgeBases[0] === 'default' ? 'default' : knowledgeBases[0]}
           </button>
+          {(knowledgeBases[0] !== 'default' || knowledgeBases.length > 1) && (
+            <span className="text-xs text-whynot-muted ml-0.5" title="Large KBs can cause empty replies. Use default for simple chats.">⚡</span>
+          )}
           {kbPickerOpen && (
             <>
               <div
@@ -458,7 +537,6 @@ export default function Chat() {
                 {loading && i === messages.length - 1 && m.role === 'assistant' && !(m.thinking ?? '') && (
                   <>
                     <span className="inline-block w-2 h-4 ml-0.5 bg-whynot-accent animate-pulse align-middle" aria-hidden title="Waiting for response…" />
-                    <span className="ml-1 text-xs text-whynot-muted">(first load can take 1–2 min)</span>
                   </>
                 )}
                 {!loading && m.role === 'assistant' && !m.content && !(m.thinking ?? '') && (
@@ -494,7 +572,7 @@ export default function Chat() {
           }}
           placeholder={internetEnabled
             ? 'Message… (web search ON – URLs will be fetched)'
-            : 'Message… /memory /remember /drive /research /bye'}
+            : 'Message… type /memory /remember /drive /research /bye'}
           rows={1}
           className="flex-1 px-3 py-2 rounded border border-whynot-border bg-whynot-surface text-whynot-body placeholder-whynot-muted text-sm resize-none min-h-[2.5rem] max-h-40 overflow-y-auto"
         />
@@ -544,7 +622,7 @@ export default function Chat() {
 const DEBUG_STEPS = [
   'Click "Get debug help" above for debugger fix suggestions',
   'Try KB: default — large KB can cause empty replies',
-  'First model load can take 1–2 min; wait and retry',
+  'Wait and retry – model may still be loading',
   'Ollama running? Click ↻ Refresh',
   'Run app from terminal to see API logs',
   'Port 41434 free? Kill other API instances',
@@ -554,7 +632,7 @@ const DEBUG_STEPS = [
   'ollama run MODEL hello — direct test',
   'mix deps.get && mix compile in elixir_tui',
   'Firewall/VPN blocking localhost?',
-  'Model too large? Try smaller model (14B needs 1–2 min first load)',
+  'Model too large? Try a smaller model',
 ];
 
 function NoResponseDebug({

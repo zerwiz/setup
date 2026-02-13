@@ -634,7 +634,8 @@ defmodule AiDevSuiteTui do
       end
     tree = if lines == [], do: "", else: "Knowledge base '#{kb_name}' (#{path}):\n" <> Enum.map_join(lines, "\n", fn line -> "  #{line}" end)
     if converted != "" do
-      tree <> "\n\n--- Converted content ---\n\n" <> String.slice(converted, 0, 14_000)
+      # Cap at 10K chars to avoid (no response) with large KBs (e.g. Ai_Dev_Suite)
+      tree <> "\n\n--- Converted content ---\n\n" <> String.slice(converted, 0, 10_000)
     else
       tree
     end
@@ -1173,14 +1174,14 @@ defmodule AiDevSuiteTui do
     end
   end
 
-  # Parse command, tolerating typos: /remeber, /rember, /momory, /memmory, /behaviour
+  # Parse command. Require / prefix for triggers; "memory" (no slash) also triggers memory.
   defp parse_chat_command(input) do
     [cmd | rest] = String.split(input, " ", parts: 2)
     rest_str = (rest |> List.first()) || ""
     lower = String.downcase(cmd)
     cond do
       lower in ["/remember", "/remeber", "/rember"] -> {:remember, rest_str}
-      lower in ["/memory", "/momory", "/memmory", "/memroy"] -> {:memory, rest_str}
+      lower in ["/memory", "/momory", "/memmory", "/memroy", "memory"] -> {:memory, rest_str}
       lower in ["/behavior", "/behaviour", "/behaivour", "/behavour"] -> {:behavior, rest_str}
       lower in ["/drive", "/dive"] -> {:drive, rest_str}
       lower in ["/research", "/search", "/reserch", "/serach"] -> {:research, rest_str}
